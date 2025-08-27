@@ -66,7 +66,29 @@ open TransparentWindowCapture.app
 
 ### 4. 権限設定
 
-## 使用方法
+初回起動時に、システムから「スクリーン録画」権限の許可を求められます：
+
+1. **自動的に表示される場合**:
+   - ダイアログで「システム設定を開く」をクリック
+   - 「Transparent Window Capture」にチェックを入れる
+   - アプリケーションを再起動
+
+2. **手動で設定する場合**:
+   ```bash
+   # システム設定を直接開く
+   open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+   ```
+   - 「プライバシーとセキュリティ」→「スクリーン録画」を選択
+   - 「Transparent Window Capture」を許可リストに追加してチェック
+
+3. **権限が正しく設定されているか確認**:
+   ```bash
+   # 権限状況を確認
+   sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db "SELECT service, client, auth_value FROM access WHERE service='kTCCServiceScreenCapture' AND client LIKE '%TransparentWindowCapture%';" 2>/dev/null
+   ```
+   - `auth_value` が `2` になっていれば権限が許可されています
+
+**注意**: 権限設定後は必ずアプリケーションを再起動してください。
 
 ## 使用方法
 
@@ -173,12 +195,48 @@ cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swi
 
 ## トラブルシューティング
 
-### アプリケーションが起動直後に終了する場合
-- **原因**: スクリーン録画権限が許可されていない
-- **解決方法**:
-  1. システム設定 > プライバシーとセキュリティ > スクリーン録画
-  2. TransparentWindowCaptureアプリをチェック
-  3. アプリケーションを再起動
+### スクリーン録画権限の問題
+
+#### 症状
+- 「更新」ボタンを押すたびにシステム設定を行うよう促すダイアログが表示される
+- ウィンドウ一覧が取得できない
+- アプリケーションが起動直後に終了する
+
+#### 解決方法
+1. **システム設定での権限確認**:
+   ```bash
+   # システム設定を直接開く
+   open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+   ```
+   - `Transparent Window Capture` または `TransparentWindowCapture` を探してチェックを入れる
+
+2. **権限のリセット**（問題が続く場合）:
+   ```bash
+   # 権限をリセット
+   tccutil reset ScreenCapture com.example.TransparentWindowCapture
+
+   # アプリケーションを再起動
+   open TransparentWindowCapture.app
+   ```
+
+3. **完全リセット手順**:
+   ```bash
+   # アプリを完全停止
+   pkill -9 -f "TransparentWindowCapture"
+
+   # 権限リセット
+   tccutil reset ScreenCapture com.example.TransparentWindowCapture
+
+   # アプリ再署名
+   codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app
+
+   # アプリ起動
+   open TransparentWindowCapture.app
+   ```
+
+### その他の問題
+
+### その他の問題
 
 ### メニューバーにアイコンが表示されない場合
 - アプリケーションが正常に起動しているか確認
@@ -191,6 +249,21 @@ cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swi
 ### キャプチャが開始されない場合
 - ウィンドウリストを更新してみてください（「更新」ボタンをクリック）
 - 対象ウィンドウが最小化されていないか確認してください
+
+### 権限問題を回避する更新コマンド
+
+コードを更新する際に権限問題を避けるために、以下のコマンドを使用してください：
+
+```bash
+# 権限問題を回避する完全更新コマンド
+cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swift && \
+swift build --configuration release && \
+pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true && \
+cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && \
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && \
+sleep 1 && \
+open TransparentWindowCapture.app
+```
 
 ## 開発者向け情報
 
