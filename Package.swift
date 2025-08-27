@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "TransparentWindowCapture",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v12)
     ],
@@ -17,7 +18,7 @@ let package = Package(
         .executableTarget(
             name: "TransparentWindowCapture",
             dependencies: [],
-            path: "Sources"
+            path: "TransparentWindowCapture"
         ),
     ]
 )
