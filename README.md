@@ -30,9 +30,6 @@ swift build --configuration release
 ### 2. アプリケーションバンドル（.app）の作成
 
 ```bash
-# 最新のコードをビルドシステムに反映
-cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swift
-
 # リリースビルド実行
 swift build --configuration release
 
@@ -123,22 +120,19 @@ open TransparentWindowCapture.app
 機能を追加・修正した場合は、以下の手順でアプリケーションを更新してください：
 
 ```bash
-# 1. 最新のコードをビルドシステムに反映
-cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swift
-
-# 2. リリースビルド
+# 1. リリースビルド
 swift build --configuration release
 
-# 3. 実行中のアプリを停止
+# 2. 実行中のアプリを停止
 pkill -f "TransparentWindowCapture" 2>/dev/null || true
 
-# 4. 実行可能ファイルを更新
+# 3. 実行可能ファイルを更新
 cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/
 
-# 5. 再コード署名
+# 4. 再コード署名
 codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app
 
-# 6. アプリ起動
+# 5. アプリ起動
 open TransparentWindowCapture.app
 ```
 
@@ -148,7 +142,7 @@ open TransparentWindowCapture.app
 
 ```bash
 # 最新コードでアプリを更新して起動
-cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swift && swift build --configuration release && pkill -f "TransparentWindowCapture" 2>/dev/null || true && cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && open TransparentWindowCapture.app
+swift build --configuration release && pkill -f "TransparentWindowCapture" 2>/dev/null || true && cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && open TransparentWindowCapture.app
 ```
 
 ## 機能の使用シナリオ例
@@ -256,7 +250,6 @@ cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swi
 
 ```bash
 # 権限問題を回避する完全更新コマンド
-cp Sources/TransparentWindowCapture/main.swift TransparentWindowCapture/main.swift && \
 swift build --configuration release && \
 pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true && \
 cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && \
@@ -276,9 +269,6 @@ TransparentWindowCapture/
 │   ├── TransparentWindowCapture.entitlements  # アプリ権限設定
 │   └── Assets.xcassets/                    # アプリアイコンとアセット
 ├── TransparentWindowCapture.app/           # 実行可能なアプリケーションバンドル
-├── Sources/
-│   └── TransparentWindowCapture/
-│       └── main.swift                      # 元のモノリシックファイル
 ├── Package.swift                           # Swift Package Manager設定
 └── README.md
 ```
