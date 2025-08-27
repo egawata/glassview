@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>このアプリではカメラは使用しません</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>デスクトップフォルダへのアクセスは必要ありません</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>ドキュメントフォルダへのアクセスは必要ありません</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>ダウンロードフォルダへのアクセスは必要ありません</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>このアプリではマイクは使用しません</string>
+	<key>NSScreenCaptureDescription</key>
+	<string>このアプリは他のアプリケーションのウィンドウをキャプチャして表示するためにスクリーン録画権限が必要です。</string>
+</dict>
+</plist>

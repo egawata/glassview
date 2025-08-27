@@ -66,6 +66,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusBarMenu() {
         let menu = NSMenu()
 
+        // 常に手前表示の切り替えメニューアイテム
+        let alwaysOnTopItem = NSMenuItem(title: "常に手前に表示", action: #selector(toggleAlwaysOnTop), keyEquivalent: "")
+        alwaysOnTopItem.target = self
+        menu.addItem(alwaysOnTopItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // 全体クリック無視の切り替えメニューアイテム
         let clickThroughItem = NSMenuItem(title: "全体クリックを無視する", action: #selector(toggleClickThrough), keyEquivalent: "")
         clickThroughItem.target = self
@@ -92,13 +99,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarItem?.menu = menu
     }
 
+    @objc private func toggleAlwaysOnTop() {
+        let currentLevel = window.level
+        let isCurrentlyOnTop = currentLevel == .floating
+
+        // ウィンドウレベルを切り替え
+        window.level = isCurrentlyOnTop ? .normal : .floating
+
+        // メニューアイテムのタイトルを更新
+        if let menu = statusBarItem?.menu,
+           let alwaysOnTopItem = menu.item(at: 0) {
+            alwaysOnTopItem.title = isCurrentlyOnTop ? "常に手前に表示" : "通常表示に戻す"
+            alwaysOnTopItem.state = isCurrentlyOnTop ? .off : .on
+        }
+
+        // ViewControllerに状態を通知
+        viewController?.updateAlwaysOnTopState(!isCurrentlyOnTop)
+    }
+
     @objc private func toggleClickThrough() {
         let isCurrentlyClickThrough = window.ignoresMouseEvents
         window.ignoresMouseEvents = !isCurrentlyClickThrough
 
         // メニューアイテムのタイトルを更新
         if let menu = statusBarItem?.menu,
-           let clickThroughItem = menu.item(at: 0) {
+           let clickThroughItem = menu.item(at: 2) {
             clickThroughItem.title = isCurrentlyClickThrough ? "全体クリックを無視する" : "全体クリックを有効にする"
             clickThroughItem.state = isCurrentlyClickThrough ? .off : .on
         }
@@ -117,7 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // メニューアイテムのタイトルを更新
         if let menu = statusBarItem?.menu,
-           let captureAreaOnlyItem = menu.item(at: 1) {
+           let captureAreaOnlyItem = menu.item(at: 3) {
             captureAreaOnlyItem.title = isEnabled ? "キャプチャエリアのクリックを有効にする" : "キャプチャエリアのみクリックを無視する"
             captureAreaOnlyItem.state = isEnabled ? .on : .off
         }
@@ -165,12 +190,14 @@ class ViewController: NSViewController {
     private var transparencySlider: NSSlider!
     private var clickThroughButton: NSButton!
     private var captureAreaOnlyButton: NSButton!
+    private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
 
     // Properties
     private var windowCaptureManager: WindowCaptureManager?
     private var availableWindows: [SCWindow] = []
     private var isClickThroughEnabled = false
+    private var isAlwaysOnTopEnabled = false
     private var isCaptureAreaOnlyMode = false {
         didSet {
             // AppDelegateがアクセスできるように通知を送信
@@ -255,8 +282,16 @@ class ViewController: NSViewController {
         captureAreaOnlyButton.action = #selector(captureAreaOnlyButtonClicked(_:))
         view.addSubview(captureAreaOnlyButton)
 
+        // Always on top button
+        alwaysOnTopButton = NSButton(frame: NSRect(x: 320, y: 50, width: 120, height: 32))
+        alwaysOnTopButton.title = "常に手前表示"
+        alwaysOnTopButton.bezelStyle = .rounded
+        alwaysOnTopButton.target = self
+        alwaysOnTopButton.action = #selector(alwaysOnTopButtonClicked(_:))
+        view.addSubview(alwaysOnTopButton)
+
         // Status label
-        statusLabel = NSTextField(frame: NSRect(x: 320, y: 56, width: 250, height: 20))
+        statusLabel = NSTextField(frame: NSRect(x: 450, y: 56, width: 320, height: 20))
         statusLabel.isEditable = false
         statusLabel.isBordered = false
         statusLabel.backgroundColor = NSColor.clear
@@ -281,6 +316,10 @@ class ViewController: NSViewController {
 
     @objc private func captureAreaOnlyButtonClicked(_ sender: NSButton) {
         toggleCaptureAreaOnlyModeInternal()
+    }
+
+    @objc private func alwaysOnTopButtonClicked(_ sender: NSButton) {
+        toggleAlwaysOnTop()
     }
 
     @objc private func startCaptureButtonClicked(_ sender: NSButton) {
@@ -309,6 +348,23 @@ class ViewController: NSViewController {
 
     @objc private func transparencySliderChanged(_ sender: NSSlider) {
         updateWindowTransparency()
+    }
+
+    // MARK: - Always On Top Methods
+    private func toggleAlwaysOnTop() {
+        isAlwaysOnTopEnabled.toggle()
+
+        // ウィンドウレベルを更新
+        view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
+
+        updateButtonTitles()
+        updateStatusLabel()
+    }
+
+    func updateAlwaysOnTopState(_ enabled: Bool) {
+        isAlwaysOnTopEnabled = enabled
+        updateButtonTitles()
+        updateStatusLabel()
     }
 
     // MARK: - Click Through Methods
@@ -349,23 +405,34 @@ class ViewController: NSViewController {
     private func updateButtonTitles() {
         clickThroughButton?.title = isClickThroughEnabled ? "全体クリック有効" : "全体クリック無視"
         captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "キャプチャ部有効" : "キャプチャ部のみ無視"
+        alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "通常表示" : "常に手前表示"
     }
 
     private func updateStatusLabel() {
-        var status = ""
+        var statusParts: [String] = []
         var color = NSColor.systemRed
 
-        if isClickThroughEnabled {
-            status = "クリック無視: 全体"
-            color = .systemGreen
-        } else if isCaptureAreaOnlyMode {
-            status = "クリック無視: キャプチャ部のみ"
-            color = .systemOrange
-        } else {
-            status = "クリック無視: 無効"
-            color = .systemRed
+        // Always On Top状態
+        if isAlwaysOnTopEnabled {
+            statusParts.append("常に手前表示")
+            color = .systemBlue
         }
 
+        // Click Through状態
+        if isClickThroughEnabled {
+            statusParts.append("クリック無視: 全体")
+            color = .systemGreen
+        } else if isCaptureAreaOnlyMode {
+            statusParts.append("クリック無視: キャプチャ部のみ")
+            color = .systemOrange
+        } else {
+            statusParts.append("クリック無視: 無効")
+            if !isAlwaysOnTopEnabled {
+                color = .systemRed
+            }
+        }
+
+        let status = statusParts.joined(separator: " | ")
         statusLabel?.stringValue = status
         statusLabel?.textColor = color
     }
