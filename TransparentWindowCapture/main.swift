@@ -17,13 +17,73 @@ class ClickThroughImageView: NSImageView {
     }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        // マウスクリックを最初から受け入れる
+        // クリック透過が有効な場合は、マウスクリックを受け入れない
         return !isClickThroughEnabled
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if !isClickThroughEnabled {
+            super.mouseDown(with: event)
+        }
+        // クリック透過が有効な場合は何もしない
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if !isClickThroughEnabled {
+            super.mouseUp(with: event)
+        }
+        // クリック透過が有効な場合は何もしない
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if !isClickThroughEnabled {
+            super.mouseDragged(with: event)
+        }
+        // クリック透過が有効な場合は何もしない
     }
 
     func setClickThroughEnabled(_ enabled: Bool) {
         isClickThroughEnabled = enabled
         needsDisplay = true
+    }
+}
+
+// MARK: - Custom Window for Click-Through
+@available(macOS 12.3, *)
+class ClickThroughWindow: NSWindow {
+    var isGlobalClickThroughEnabled = false
+
+    override var canBecomeKey: Bool {
+        // 全体クリック無視が有効な場合は、キーウィンドウにならない
+        return !isGlobalClickThroughEnabled
+    }
+
+    override var canBecomeMain: Bool {
+        // 全体クリック無視が有効な場合は、メインウィンドウにならない
+        return !isGlobalClickThroughEnabled
+    }
+
+    override func sendEvent(_ event: NSEvent) {
+        if isGlobalClickThroughEnabled {
+            // 全体クリック無視が有効な場合は、イベントを処理しない
+            // ただし、右クリックメニューは許可する
+            if event.type == .rightMouseDown || event.type == .rightMouseUp {
+                super.sendEvent(event)
+            }
+            return
+        }
+        super.sendEvent(event)
+    }
+
+    func setGlobalClickThroughEnabled(_ enabled: Bool) {
+        isGlobalClickThroughEnabled = enabled
+        ignoresMouseEvents = enabled
+
+        if enabled {
+            // クリック無視を有効にする場合は、フォーカスも失わせる
+            resignKey()
+            resignMain()
+        }
     }
 }
 
@@ -50,6 +110,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .captureAreaOnlyModeChanged,
             object: nil
         )
+
+        // 初期状態でメニューバーの状態を同期
+        updateAllMenuStates()
+    }
+
+    // 全てのメニュー状態を現在の設定と同期
+    private func updateAllMenuStates() {
+        let isAlwaysOnTop = window.level == .floating
+        let isClickThrough = (window as? ClickThroughWindow)?.isGlobalClickThroughEnabled ?? false
+
+        updateAlwaysOnTopMenuState(isAlwaysOnTop)
+        updateClickThroughMenuState(isClickThrough)
     }
 
     private func setupStatusBarItem() {
@@ -73,13 +145,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 全体クリック無視の切り替えメニューアイテム
-        let clickThroughItem = NSMenuItem(title: "全体クリックを無視する", action: #selector(toggleClickThrough), keyEquivalent: "")
+        // 全体クリック透過の切り替えメニューアイテム
+        let clickThroughItem = NSMenuItem(title: "全体クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "")
         clickThroughItem.target = self
         menu.addItem(clickThroughItem)
 
-        // キャプチャエリアのみクリック無視の切り替えメニューアイテム
-        let captureAreaOnlyItem = NSMenuItem(title: "キャプチャエリアのみクリックを無視する", action: #selector(toggleCaptureAreaOnly), keyEquivalent: "")
+        // キャプチャエリアのみクリック透過の切り替えメニューアイテム
+        let captureAreaOnlyItem = NSMenuItem(title: "キャプチャエリアのみクリック透過", action: #selector(toggleCaptureAreaOnly), keyEquivalent: "")
         captureAreaOnlyItem.target = self
         menu.addItem(captureAreaOnlyItem)
 
@@ -106,30 +178,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // ウィンドウレベルを切り替え
         window.level = isCurrentlyOnTop ? .normal : .floating
 
-        // メニューアイテムのタイトルを更新
-        if let menu = statusBarItem?.menu,
-           let alwaysOnTopItem = menu.item(at: 0) {
-            alwaysOnTopItem.title = isCurrentlyOnTop ? "常に手前に表示" : "通常表示に戻す"
-            alwaysOnTopItem.state = isCurrentlyOnTop ? .off : .on
-        }
+        // メニューアイテムの状態を更新
+        updateAlwaysOnTopMenuState(!isCurrentlyOnTop)
 
         // ViewControllerに状態を通知
         viewController?.updateAlwaysOnTopState(!isCurrentlyOnTop)
     }
 
+    // メニューバーの常に手前表示の状態を更新するメソッド
+    func updateAlwaysOnTopMenuState(_ isEnabled: Bool) {
+        if let menu = statusBarItem?.menu,
+           let alwaysOnTopItem = menu.item(at: 0) {
+            alwaysOnTopItem.title = isEnabled ? "通常表示に戻す" : "常に手前に表示"
+            alwaysOnTopItem.state = isEnabled ? .on : .off
+        }
+    }
+
     @objc private func toggleClickThrough() {
-        let isCurrentlyClickThrough = window.ignoresMouseEvents
-        window.ignoresMouseEvents = !isCurrentlyClickThrough
+        let isCurrentlyClickThrough = (window as? ClickThroughWindow)?.isGlobalClickThroughEnabled ?? false
+
+        // カスタムウィンドウのクリック透過設定を使用
+        (window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(!isCurrentlyClickThrough)
 
         // メニューアイテムのタイトルを更新
-        if let menu = statusBarItem?.menu,
-           let clickThroughItem = menu.item(at: 2) {
-            clickThroughItem.title = isCurrentlyClickThrough ? "全体クリックを無視する" : "全体クリックを有効にする"
-            clickThroughItem.state = isCurrentlyClickThrough ? .off : .on
-        }
+        updateClickThroughMenuState(!isCurrentlyClickThrough)
 
         // ViewControllerに状態を通知
         viewController?.updateClickThroughState(!isCurrentlyClickThrough)
+
+        // 全体クリック透過が有効になった場合、キャプチャエリアのみモードは無効にする
+        if !isCurrentlyClickThrough {
+            NotificationCenter.default.post(name: .captureAreaOnlyModeChanged, object: false)
+        }
+    }
+
+    // メニューバーの全体クリック透過の状態を更新するメソッド
+    func updateClickThroughMenuState(_ isEnabled: Bool) {
+        if let menu = statusBarItem?.menu,
+           let clickThroughItem = menu.item(at: 2) {
+            clickThroughItem.title = "全体クリック透過"
+            clickThroughItem.state = isEnabled ? .on : .off
+        }
     }
 
     @objc private func toggleCaptureAreaOnly() {
@@ -143,7 +232,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // メニューアイテムのタイトルを更新
         if let menu = statusBarItem?.menu,
            let captureAreaOnlyItem = menu.item(at: 3) {
-            captureAreaOnlyItem.title = isEnabled ? "キャプチャエリアのクリックを有効にする" : "キャプチャエリアのみクリックを無視する"
+            captureAreaOnlyItem.title = "キャプチャエリアのみクリック透過"
             captureAreaOnlyItem.state = isEnabled ? .on : .off
         }
     }
@@ -156,7 +245,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupWindow() {
         let contentRect = NSRect(x: 0, y: 0, width: 800, height: 600)
 
-        window = NSWindow(
+        // カスタムウィンドウクラスを使用
+        window = ClickThroughWindow(
             contentRect: contentRect,
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
@@ -165,7 +255,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         window.title = "Transparent Window Capture"
         window.center()
-        
+
         // 最小ウィンドウサイズを設定（UI要素が正常に表示できる最小サイズ）
         window.minSize = NSSize(width: 400, height: 300)
 
@@ -223,11 +313,11 @@ class ViewController: NSViewController {
         // 初期透明度設定
         transparencySlider.doubleValue = 0.8
         updateWindowTransparency()
-        
+
         // ウィンドウリサイズの監視を設定
         setupWindowResizeObserver()
     }
-    
+
     override func viewDidLayout() {
         super.viewDidLayout()
         // ビューのレイアウトが変更された時にキャプチャエリアのサイズも調整
@@ -282,14 +372,14 @@ class ViewController: NSViewController {
 
         // Click-through buttons
         clickThroughButton = NSButton(frame: NSRect(x: 20, y: 50, width: 130, height: 32))
-        clickThroughButton.title = "全体クリック無視"
+        clickThroughButton.title = "全体クリック透過"
         clickThroughButton.bezelStyle = .rounded
         clickThroughButton.target = self
         clickThroughButton.action = #selector(clickThroughButtonClicked(_:))
         view.addSubview(clickThroughButton)
 
         captureAreaOnlyButton = NSButton(frame: NSRect(x: 160, y: 50, width: 150, height: 32))
-        captureAreaOnlyButton.title = "キャプチャ部のみ無視"
+        captureAreaOnlyButton.title = "キャプチャ部のみ透過"
         captureAreaOnlyButton.bezelStyle = .rounded
         captureAreaOnlyButton.target = self
         captureAreaOnlyButton.action = #selector(captureAreaOnlyButtonClicked(_:))
@@ -367,8 +457,19 @@ class ViewController: NSViewController {
     private func toggleAlwaysOnTop() {
         isAlwaysOnTopEnabled.toggle()
 
-        // ウィンドウレベルを更新
-        view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
+        // ウィンドウレベルを更新（キャプチャエリアのみモードも考慮）
+        if isCaptureAreaOnlyMode {
+            // キャプチャエリアのみモードの場合は、専用レベルを維持
+            view.window?.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
+        } else {
+            // 通常モードの場合は、常に手前表示の状態に応じて設定
+            view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
+        }
+
+        // AppDelegateのメニュー状態も更新
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            appDelegate.updateAlwaysOnTopMenuState(isAlwaysOnTopEnabled)
+        }
 
         updateButtonTitles()
         updateStatusLabel()
@@ -385,8 +486,18 @@ class ViewController: NSViewController {
         isClickThroughEnabled.toggle()
         isCaptureAreaOnlyMode = false // 排他的モード
 
-        view.window?.ignoresMouseEvents = isClickThroughEnabled
+        // カスタムウィンドウのクリック透過設定を使用
+        (view.window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(isClickThroughEnabled)
         customImageView?.setClickThroughEnabled(false)
+
+        // AppDelegateのメニュー状態も更新
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            appDelegate.updateClickThroughMenuState(isClickThroughEnabled)
+            // キャプチャエリアのみモードも無効になったことを通知
+            if !isCaptureAreaOnlyMode {
+                NotificationCenter.default.post(name: .captureAreaOnlyModeChanged, object: false)
+            }
+        }
 
         updateButtonTitles()
         updateStatusLabel()
@@ -396,8 +507,21 @@ class ViewController: NSViewController {
         isCaptureAreaOnlyMode.toggle()
         isClickThroughEnabled = false // 排他的モード
 
-        view.window?.ignoresMouseEvents = false
+        // 全体のクリック透過は無効にし、キャプチャエリアのみ設定
+        (view.window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(false)
         customImageView?.setClickThroughEnabled(isCaptureAreaOnlyMode)
+
+        if isCaptureAreaOnlyMode {
+            // キャプチャエリアのみクリック透過の場合、ウィンドウレベルを少し上げる
+            // これにより、他のアプリケーションのクリックがより確実に背後に透過される
+            view.window?.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
+        } else {
+            // 通常状態または常に手前表示の状態に戻す
+            view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
+        }
+
+        // メニューバーのチェック状態も更新（通知を通じて）
+        // isCaptureAreaOnlyModeのdidSetで通知が送信される
 
         updateButtonTitles()
         updateStatusLabel()
@@ -405,7 +529,9 @@ class ViewController: NSViewController {
 
     func updateClickThroughState(_ enabled: Bool) {
         isClickThroughEnabled = enabled
-        isCaptureAreaOnlyMode = false
+        if enabled {
+            isCaptureAreaOnlyMode = false // 排他的モード
+        }
         customImageView?.setClickThroughEnabled(false)
         updateButtonTitles()
         updateStatusLabel()
@@ -416,8 +542,8 @@ class ViewController: NSViewController {
     }
 
     private func updateButtonTitles() {
-        clickThroughButton?.title = isClickThroughEnabled ? "全体クリック有効" : "全体クリック無視"
-        captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "キャプチャ部有効" : "キャプチャ部のみ無視"
+        clickThroughButton?.title = isClickThroughEnabled ? "全体クリック有効" : "全体クリック透過"
+        captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "キャプチャ部有効" : "キャプチャ部のみ透過"
         alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "通常表示" : "常に手前表示"
     }
 
@@ -433,13 +559,13 @@ class ViewController: NSViewController {
 
         // Click Through状態
         if isClickThroughEnabled {
-            statusParts.append("クリック無視: 全体")
+            statusParts.append("クリック透過: 全体")
             color = .systemGreen
         } else if isCaptureAreaOnlyMode {
-            statusParts.append("クリック無視: キャプチャ部のみ")
+            statusParts.append("クリック透過: キャプチャ部のみ")
             color = .systemOrange
         } else {
-            statusParts.append("クリック無視: 無効")
+            statusParts.append("クリック透過: 無効")
             if !isAlwaysOnTopEnabled {
                 color = .systemRed
             }
@@ -511,7 +637,7 @@ class ViewController: NSViewController {
         let alphaValue = transparencySlider.doubleValue
         view.window?.alphaValue = CGFloat(alphaValue)
     }
-    
+
     // MARK: - Window Resize and Layout Methods
     private func setupWindowResizeObserver() {
         // ウィンドウリサイズの通知を監視
@@ -522,19 +648,19 @@ class ViewController: NSViewController {
             object: view.window
         )
     }
-    
+
     @objc private func windowDidResize(_ notification: Notification) {
         // ウィンドウがリサイズされた時にキャプチャエリアのレイアウトを更新
         updateCaptureAreaLayout()
     }
-    
+
     private func updateCaptureAreaLayout() {
         guard let window = view.window else { return }
-        
+
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
         let bottomControlsHeight: CGFloat = 100 // コントロール部分の高さ
-        
+
         // キャプチャエリアの新しいフレームを計算
         let newFrame = NSRect(
             x: margin,
@@ -542,17 +668,17 @@ class ViewController: NSViewController {
             width: windowFrame.width - (margin * 2),
             height: windowFrame.height - bottomControlsHeight - (margin * 2)
         )
-        
+
         // フレームを更新
         customImageView.frame = newFrame
-        
+
         // 現在の画像がある場合は再描画をトリガー
         if let currentImage = customImageView.image {
             customImageView.image = currentImage
             customImageView.needsDisplay = true
         }
     }
-    
+
     deinit {
         // メモリリークを防ぐためにNotificationObserverを削除
         NotificationCenter.default.removeObserver(self)
