@@ -253,6 +253,7 @@ swift build --configuration release && pkill -f "TransparentWindowCapture" 2>/de
 swift build --configuration release && \
 pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true && \
 cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && \
+tccutil reset ScreenCapture com.example.TransparentWindowCapture && \
 codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && \
 sleep 1 && \
 open TransparentWindowCapture.app
