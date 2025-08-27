@@ -157,6 +157,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // 不透明度をリセットメニューアイテム
+        let resetOpacityItem = NSMenuItem(title: "不透明度をリセット", action: #selector(resetOpacity), keyEquivalent: "")
+        resetOpacityItem.target = self
+        menu.addItem(resetOpacityItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // ウィンドウを表示メニューアイテム
         let showWindowItem = NSMenuItem(title: "ウィンドウを表示", action: #selector(showMainWindow), keyEquivalent: "")
         showWindowItem.target = self
@@ -240,6 +247,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showMainWindow() {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func resetOpacity() {
+        // ViewControllerの不透明度をリセット
+        viewController?.resetOpacity()
     }
 
     private func setupWindow() {
@@ -450,6 +462,13 @@ class ViewController: NSViewController {
     }
 
     @objc private func transparencySliderChanged(_ sender: NSSlider) {
+        updateWindowTransparency()
+    }
+
+    // MARK: - Opacity Reset Methods
+    func resetOpacity() {
+        // 不透明度を100%（1.0）にリセット
+        transparencySlider.doubleValue = 1.0
         updateWindowTransparency()
     }
 
