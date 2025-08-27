@@ -287,16 +287,59 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 // MARK: - ViewController
 @available(macOS 12.3, *)
+// MARK: - UI Control Registry for Observer Pattern
+@available(macOS 12.3, *)
+class UIControlRegistry {
+    private var registeredControls: [NSControl] = []
+    private var alwaysEnabledControls: Set<NSControl> = []
+
+    func register(_ control: NSControl, alwaysEnabled: Bool = false) {
+        if !registeredControls.contains(control) {
+            registeredControls.append(control)
+            if alwaysEnabled {
+                alwaysEnabledControls.insert(control)
+            }
+        }
+    }
+
+    func unregister(_ control: NSControl) {
+        registeredControls.removeAll { $0 == control }
+        alwaysEnabledControls.remove(control)
+    }
+
+    func setAllControlsEnabled(_ enabled: Bool, except excludedControls: [NSControl] = []) {
+        for control in registeredControls {
+            // alwaysEnabled が設定されているコントロールは除外条件に関係なく常に有効
+            if alwaysEnabledControls.contains(control) {
+                control.isEnabled = true
+                control.alphaValue = 1.0
+            } else if !excludedControls.contains(control) {
+                control.isEnabled = enabled
+                control.alphaValue = enabled ? 1.0 : 0.5
+            }
+        }
+    }
+
+    func getAllRegisteredControls() -> [NSControl] {
+        return registeredControls
+    }
+}
+
+@available(macOS 12.3, *)
 class ViewController: NSViewController {
     // UI Components
     private var customImageView: ClickThroughImageView!
     private var windowListPopup: NSPopUpButton!
     private var startCaptureButton: NSButton!
+    private var refreshButton: NSButton!
     private var transparencySlider: NSSlider!
     private var clickThroughButton: NSButton!
     private var captureAreaOnlyButton: NSButton!
     private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
+
+    // UI Control Registry for Observer Pattern
+    private let uiControlRegistry = UIControlRegistry()
 
     // Properties
     private var windowCaptureManager: WindowCaptureManager?
@@ -328,6 +371,9 @@ class ViewController: NSViewController {
 
         // ウィンドウリサイズの監視を設定
         setupWindowResizeObserver()
+
+        // 初期ボタンの状態を設定
+        updateButtonTitles()
     }
 
     override func viewDidLayout() {
@@ -359,7 +405,7 @@ class ViewController: NSViewController {
         view.addSubview(startCaptureButton)
 
         // Refresh button
-        let refreshButton = NSButton(frame: NSRect(x: 460, y: 81, width: 100, height: 32))
+        refreshButton = NSButton(frame: NSRect(x: 460, y: 81, width: 100, height: 32))
         refreshButton.title = "リスト更新"
         refreshButton.bezelStyle = .rounded
         refreshButton.target = self
@@ -422,6 +468,37 @@ class ViewController: NSViewController {
         infoLabel.textColor = NSColor.secondaryLabelColor
         infoLabel.font = NSFont.systemFont(ofSize: 11)
         view.addSubview(infoLabel)
+
+        // Register all UI controls to the registry for observer pattern
+        registerUIControls()
+    }
+
+    // MARK: - UI Control Registration
+    private func registerUIControls() {
+        // Register all buttons and controls that should be managed by the registry
+        uiControlRegistry.register(startCaptureButton)
+        uiControlRegistry.register(refreshButton)
+        uiControlRegistry.register(windowListPopup)
+        uiControlRegistry.register(captureAreaOnlyButton)
+        uiControlRegistry.register(alwaysOnTopButton)
+        uiControlRegistry.register(transparencySlider)
+        uiControlRegistry.register(clickThroughButton)  // クリック透過ボタンも登録
+    }
+
+    // MARK: - Dynamic UI Control Management
+    /// 新しいコントロールを追加して自動的にRegistryに登録する
+    func addUIControl(_ control: NSControl, alwaysEnabled: Bool = false) {
+        uiControlRegistry.register(control, alwaysEnabled: alwaysEnabled)
+        view.addSubview(control)
+
+        // 現在のクリック透過状態に応じてコントロールの状態を設定
+        updateButtonStatesForClickThrough()
+    }
+
+    /// コントロールを削除してRegistryからも登録解除する
+    func removeUIControl(_ control: NSControl) {
+        uiControlRegistry.unregister(control)
+        control.removeFromSuperview()
     }
 
     // MARK: - Action Methods
@@ -453,8 +530,11 @@ class ViewController: NSViewController {
         } else {
             windowCaptureManager?.stopCapture()
             sender.title = "キャプチャ開始"
-            windowListPopup.isEnabled = true
+            windowListPopup.isEnabled = !isClickThroughEnabled // 全体クリック透過状態を考慮
         }
+
+        // ボタンの状態を更新
+        updateButtonStatesForClickThrough()
     }
 
     @objc private func refreshWindowListClicked(_ sender: NSButton) {
@@ -564,6 +644,26 @@ class ViewController: NSViewController {
         clickThroughButton?.title = isClickThroughEnabled ? "✓ 全体クリック透過" : "全体クリック透過"
         captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "✓ キャプチャ部のみ透過" : "キャプチャ部のみ透過"
         alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "✓ 常に手前表示" : "常に手前表示"
+
+        // 全体クリック透過が有効な場合、他のボタンを無効化してUIの分かりやすさを向上
+        updateButtonStatesForClickThrough()
+    }
+
+    private func updateButtonStatesForClickThrough() {
+        if isClickThroughEnabled {
+            // 全体クリック透過が有効な場合、すべてのコントロールを無効化
+            // クリック透過ボタン自体も無効にする（どうせ押せないため）
+            uiControlRegistry.setAllControlsEnabled(false)
+        } else {
+            // 全体クリック透過が無効な場合、すべてのコントロールを有効化
+            uiControlRegistry.setAllControlsEnabled(true)
+
+            // ただし、キャプチャ中はウィンドウ選択ポップアップを無効にする
+            if startCaptureButton?.title != "キャプチャ開始" {
+                windowListPopup?.isEnabled = false
+                windowListPopup?.alphaValue = 0.5
+            }
+        }
     }
 
     private func updateStatusLabel() {
