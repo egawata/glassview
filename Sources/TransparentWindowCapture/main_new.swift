@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
     
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    func applicationShouldTerminateWhenLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
 }
@@ -229,11 +229,9 @@ class WindowCaptureManager: NSObject {
     
     private var captureTimer: Timer?
     private var targetWindow: SCWindow?
-    private var errorCount = 0 // インスタンス変数として定義
     
     func startCapture(for window: SCWindow) {
         targetWindow = window
-        errorCount = 0 // エラーカウンタをリセット
         
         print("ウィンドウキャプチャ開始:")
         print("  ウィンドウタイトル: \(window.title ?? "不明")")
@@ -260,6 +258,7 @@ class WindowCaptureManager: NSObject {
             [.bestResolution, .boundsIgnoreFraming]
         ) else {
             // 最初の数回のエラーのみログ出力
+            static var errorCount = 0
             if errorCount < 3 {
                 print("CGWindowListCreateImage失敗 - ウィンドウID: \(windowID)")
                 errorCount += 1
@@ -277,7 +276,6 @@ class WindowCaptureManager: NSObject {
         captureTimer?.invalidate()
         captureTimer = nil
         targetWindow = nil
-        errorCount = 0
         print("ウィンドウキャプチャ停止完了")
     }
 }
