@@ -322,8 +322,8 @@ class ViewController: NSViewController {
         loadAvailableWindows()
         updateStatusLabel()
 
-        // 初期透明度設定
-        transparencySlider.doubleValue = 0.8
+        // 初期不透明度設定（100%）
+        transparencySlider.doubleValue = 1.0
         updateWindowTransparency()
 
         // ウィンドウリサイズの監視を設定
@@ -338,7 +338,7 @@ class ViewController: NSViewController {
 
     private func setupUI() {
         // Custom ImageView (click-through capable) - アスペクト比保持でリサイズ
-        customImageView = ClickThroughImageView(frame: NSRect(x: 20, y: 120, width: 760, height: 440))
+        customImageView = ClickThroughImageView(frame: NSRect(x: 20, y: 120, width: 760, height: 420))
         customImageView.imageScaling = .scaleProportionallyUpOrDown // アスペクト比を保持してサイズ調整
         customImageView.imageAlignment = .alignCenter // 中央配置
         customImageView.wantsLayer = true
@@ -351,7 +351,7 @@ class ViewController: NSViewController {
         view.addSubview(windowListPopup)
 
         // Start capture button
-        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 81, width: 100, height: 32))
+        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 81, width: 120, height: 32))
         startCaptureButton.title = "キャプチャ開始"
         startCaptureButton.bezelStyle = .rounded
         startCaptureButton.target = self
@@ -359,38 +359,38 @@ class ViewController: NSViewController {
         view.addSubview(startCaptureButton)
 
         // Refresh button
-        let refreshButton = NSButton(frame: NSRect(x: 442, y: 81, width: 80, height: 32))
-        refreshButton.title = "更新"
+        let refreshButton = NSButton(frame: NSRect(x: 460, y: 81, width: 100, height: 32))
+        refreshButton.title = "リスト更新"
         refreshButton.bezelStyle = .rounded
         refreshButton.target = self
         refreshButton.action = #selector(refreshWindowListClicked(_:))
         view.addSubview(refreshButton)
 
-        // Transparency label and slider
-        let transparencyLabel = NSTextField(frame: NSRect(x: 540, y: 90, width: 45, height: 16))
-        transparencyLabel.stringValue = "透明度:"
+        // Transparency label and slider (2nd row)
+        let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 61, width: 70, height: 16))
+        transparencyLabel.stringValue = "不透明度:"
         transparencyLabel.isEditable = false
         transparencyLabel.isBordered = false
         transparencyLabel.backgroundColor = NSColor.clear
         view.addSubview(transparencyLabel)
 
-        transparencySlider = NSSlider(frame: NSRect(x: 590, y: 86, width: 190, height: 25))
+        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 57, width: 685, height: 25))
         transparencySlider.minValue = 0.1
         transparencySlider.maxValue = 1.0
-        transparencySlider.doubleValue = 0.8
+        transparencySlider.doubleValue = 1.0
         transparencySlider.target = self
         transparencySlider.action = #selector(transparencySliderChanged(_:))
         view.addSubview(transparencySlider)
 
-        // Click-through buttons
-        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 50, width: 130, height: 32))
+        // Click-through buttons (3rd row)
+        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 31, width: 130, height: 32))
         clickThroughButton.title = "全体クリック透過"
         clickThroughButton.bezelStyle = .rounded
         clickThroughButton.target = self
         clickThroughButton.action = #selector(clickThroughButtonClicked(_:))
         view.addSubview(clickThroughButton)
 
-        captureAreaOnlyButton = NSButton(frame: NSRect(x: 160, y: 50, width: 150, height: 32))
+        captureAreaOnlyButton = NSButton(frame: NSRect(x: 160, y: 31, width: 150, height: 32))
         captureAreaOnlyButton.title = "キャプチャ部のみ透過"
         captureAreaOnlyButton.bezelStyle = .rounded
         captureAreaOnlyButton.target = self
@@ -398,15 +398,15 @@ class ViewController: NSViewController {
         view.addSubview(captureAreaOnlyButton)
 
         // Always on top button
-        alwaysOnTopButton = NSButton(frame: NSRect(x: 320, y: 50, width: 120, height: 32))
+        alwaysOnTopButton = NSButton(frame: NSRect(x: 320, y: 31, width: 120, height: 32))
         alwaysOnTopButton.title = "常に手前表示"
         alwaysOnTopButton.bezelStyle = .rounded
         alwaysOnTopButton.target = self
         alwaysOnTopButton.action = #selector(alwaysOnTopButtonClicked(_:))
         view.addSubview(alwaysOnTopButton)
 
-        // Status label
-        statusLabel = NSTextField(frame: NSRect(x: 450, y: 56, width: 320, height: 20))
+        // Status label (3rd row)
+        statusLabel = NSTextField(frame: NSRect(x: 450, y: 37, width: 320, height: 20))
         statusLabel.isEditable = false
         statusLabel.isBordered = false
         statusLabel.backgroundColor = NSColor.clear
@@ -414,7 +414,7 @@ class ViewController: NSViewController {
         view.addSubview(statusLabel)
 
         // Info label
-        let infoLabel = NSTextField(frame: NSRect(x: 20, y: 20, width: 760, height: 16))
+        let infoLabel = NSTextField(frame: NSRect(x: 20, y: 5, width: 760, height: 16))
         infoLabel.stringValue = "※ このアプリにはスクリーン録画権限が必要です。システム設定 > プライバシーとセキュリティ > スクリーン録画 で許可してください。"
         infoLabel.isEditable = false
         infoLabel.isBordered = false
@@ -561,9 +561,9 @@ class ViewController: NSViewController {
     }
 
     private func updateButtonTitles() {
-        clickThroughButton?.title = isClickThroughEnabled ? "全体クリック有効" : "全体クリック透過"
-        captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "キャプチャ部有効" : "キャプチャ部のみ透過"
-        alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "通常表示" : "常に手前表示"
+        clickThroughButton?.title = isClickThroughEnabled ? "✓ 全体クリック透過" : "全体クリック透過"
+        captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "✓ キャプチャ部のみ透過" : "キャプチャ部のみ透過"
+        alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "✓ 常に手前表示" : "常に手前表示"
     }
 
     private func updateStatusLabel() {
@@ -678,7 +678,7 @@ class ViewController: NSViewController {
 
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
-        let bottomControlsHeight: CGFloat = 100 // コントロール部分の高さ
+        let bottomControlsHeight: CGFloat = 120 // コントロール部分の高さ（3段レイアウト対応）
 
         // キャプチャエリアの新しいフレームを計算
         let newFrame = NSRect(
