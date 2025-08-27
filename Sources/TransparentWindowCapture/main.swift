@@ -166,6 +166,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "Transparent Window Capture"
         window.center()
 
+        // 最小ウィンドウサイズを設定（UI要素が正常に表示できる最小サイズ）
+        window.minSize = NSSize(width: 400, height: 300)
+
         let viewController = ViewController()
         window.contentViewController = viewController
         self.viewController = viewController // ViewControllerへの参照を保存
@@ -220,12 +223,22 @@ class ViewController: NSViewController {
         // 初期透明度設定
         transparencySlider.doubleValue = 0.8
         updateWindowTransparency()
+
+        // ウィンドウリサイズの監視を設定
+        setupWindowResizeObserver()
+    }
+
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        // ビューのレイアウトが変更された時にキャプチャエリアのサイズも調整
+        updateCaptureAreaLayout()
     }
 
     private func setupUI() {
-        // Custom ImageView (click-through capable)
+        // Custom ImageView (click-through capable) - アスペクト比保持でリサイズ
         customImageView = ClickThroughImageView(frame: NSRect(x: 20, y: 120, width: 760, height: 440))
-        customImageView.imageScaling = .scaleProportionallyUpOrDown
+        customImageView.imageScaling = .scaleProportionallyUpOrDown // アスペクト比を保持してサイズ調整
+        customImageView.imageAlignment = .alignCenter // 中央配置
         customImageView.wantsLayer = true
         customImageView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         view.addSubview(customImageView)
@@ -498,6 +511,52 @@ class ViewController: NSViewController {
         let alphaValue = transparencySlider.doubleValue
         view.window?.alphaValue = CGFloat(alphaValue)
     }
+
+    // MARK: - Window Resize and Layout Methods
+    private func setupWindowResizeObserver() {
+        // ウィンドウリサイズの通知を監視
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidResize(_:)),
+            name: NSWindow.didResizeNotification,
+            object: view.window
+        )
+    }
+
+    @objc private func windowDidResize(_ notification: Notification) {
+        // ウィンドウがリサイズされた時にキャプチャエリアのレイアウトを更新
+        updateCaptureAreaLayout()
+    }
+
+    private func updateCaptureAreaLayout() {
+        guard let window = view.window else { return }
+
+        let windowFrame = window.contentView?.frame ?? NSRect.zero
+        let margin: CGFloat = 20
+        let bottomControlsHeight: CGFloat = 100 // コントロール部分の高さ
+
+        // キャプチャエリアの新しいフレームを計算
+        let newFrame = NSRect(
+            x: margin,
+            y: bottomControlsHeight + margin,
+            width: windowFrame.width - (margin * 2),
+            height: windowFrame.height - bottomControlsHeight - (margin * 2)
+        )
+
+        // フレームを更新
+        customImageView.frame = newFrame
+
+        // 現在の画像がある場合は再描画をトリガー
+        if let currentImage = customImageView.image {
+            customImageView.image = currentImage
+            customImageView.needsDisplay = true
+        }
+    }
+
+    deinit {
+        // メモリリークを防ぐためにNotificationObserverを削除
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
 // MARK: - WindowCaptureManagerDelegate
@@ -505,6 +564,9 @@ class ViewController: NSViewController {
 extension ViewController: WindowCaptureManagerDelegate {
     func didReceiveNewFrame(_ image: NSImage) {
         DispatchQueue.main.async {
+            // 画像をキャプチャエリアに設定
+            // NSImageViewのimageScalingが.scaleProportionallyUpOrDownに設定されているため、
+            // アスペクト比を保持しながら自動的にフィットされる
             self.customImageView.image = image
         }
     }
