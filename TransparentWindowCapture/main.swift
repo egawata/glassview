@@ -196,7 +196,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func updateAlwaysOnTopMenuState(_ isEnabled: Bool) {
         if let menu = statusBarItem?.menu,
            let alwaysOnTopItem = menu.item(at: 0) {
-            alwaysOnTopItem.title = isEnabled ? "通常表示に戻す" : "常に手前に表示"
+            alwaysOnTopItem.title = "常に手前に表示"
             alwaysOnTopItem.state = isEnabled ? .on : .off
         }
     }
