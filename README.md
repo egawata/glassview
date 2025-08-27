@@ -141,8 +141,14 @@ open TransparentWindowCapture.app
 開発中によく使う更新作業をワンライナーでまとめました：
 
 ```bash
-# 最新コードでアプリを更新して起動
-swift build --configuration release && pkill -f "TransparentWindowCapture" 2>/dev/null || true && cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && open TransparentWindowCapture.app
+```bash
+# 最新コードでアプリを更新して起動（Xcodeビルドシステム使用）
+xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release build &&
+pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true &&
+rm -rf TransparentWindowCapture.app &&
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/TransparentWindowCapture.app . &&
+sleep 1 &&
+open TransparentWindowCapture.app
 ```
 
 ## 機能の使用シナリオ例
@@ -249,12 +255,12 @@ swift build --configuration release && pkill -f "TransparentWindowCapture" 2>/de
 コードを更新する際に権限問題を避けるために、以下のコマンドを使用してください：
 
 ```bash
-# 権限問題を回避する完全更新コマンド
-swift build --configuration release && \
+# 権限問題を回避する完全更新コマンド（Xcodeビルドシステム使用）
+xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build && \
 pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true && \
-cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/ && \
 tccutil reset ScreenCapture com.example.TransparentWindowCapture && \
-codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app && \
+rm -rf TransparentWindowCapture.app && \
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/TransparentWindowCapture.app . && \
 sleep 1 && \
 open TransparentWindowCapture.app
 ```
