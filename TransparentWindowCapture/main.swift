@@ -141,19 +141,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusBarMenu() {
         let menu = NSMenu()
 
+        // 全てリセットメニューアイテム（一番上）
+        let resetAllItem = NSMenuItem(title: "全てリセット", action: #selector(resetAll), keyEquivalent: "")
+        resetAllItem.target = self
+        menu.addItem(resetAllItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // ここから下は従来機能と同じ
         // 常に手前表示の切り替えメニューアイテム
         let alwaysOnTopItem = NSMenuItem(title: "常に手前に表示", action: #selector(toggleAlwaysOnTop), keyEquivalent: "")
         alwaysOnTopItem.target = self
         menu.addItem(alwaysOnTopItem)
 
-        menu.addItem(NSMenuItem.separator())
-
         // クリック透過の切り替えメニューアイテム
         let clickThroughItem = NSMenuItem(title: "クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "")
         clickThroughItem.target = self
         menu.addItem(clickThroughItem)
-
-        menu.addItem(NSMenuItem.separator())
 
         // 不透明度をリセットメニューアイテム
         let resetOpacityItem = NSMenuItem(title: "不透明度をリセット", action: #selector(resetOpacity), keyEquivalent: "")
@@ -166,8 +170,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let showWindowItem = NSMenuItem(title: "ウィンドウを表示", action: #selector(showMainWindow), keyEquivalent: "")
         showWindowItem.target = self
         menu.addItem(showWindowItem)
-
-        menu.addItem(NSMenuItem.separator())
 
         // 終了メニューアイテム
         let quitItem = NSMenuItem(title: "終了", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -193,7 +195,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // メニューバーの常に手前表示の状態を更新するメソッド
     func updateAlwaysOnTopMenuState(_ isEnabled: Bool) {
         if let menu = statusBarItem?.menu,
-           let alwaysOnTopItem = menu.item(at: 0) {
+           let alwaysOnTopItem = menu.item(at: 2) { // インデックスを2に変更（全てリセット、区切り線の後）
             alwaysOnTopItem.title = "常に手前に表示"
             alwaysOnTopItem.state = isEnabled ? .on : .off
         }
@@ -215,7 +217,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // メニューバーのクリック透過の状態を更新するメソッド
     func updateClickThroughMenuState(_ isEnabled: Bool) {
         if let menu = statusBarItem?.menu,
-           let clickThroughItem = menu.item(at: 2) {
+           let clickThroughItem = menu.item(at: 3) { // インデックスを3に変更（全てリセット、区切り線、常に手前の後）
             clickThroughItem.title = "クリック透過"
             clickThroughItem.state = isEnabled ? .on : .off
         }
@@ -229,6 +231,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func resetOpacity() {
         // ViewControllerの不透明度をリセット
         viewController?.resetOpacity()
+    }
+
+    @objc private func resetAll() {
+        // 全てを初期状態に戻す
+
+        // 常に手前表示を無効化
+        window.level = .normal
+        updateAlwaysOnTopMenuState(false)
+        viewController?.updateAlwaysOnTopState(false)
+
+        // クリック透過を無効化
+        (window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(false)
+        updateClickThroughMenuState(false)
+        viewController?.updateClickThroughState(false)
+
+        // 不透明度を100%にリセット
+        viewController?.resetOpacity()
+        
+        // ウィンドウをアクティブにして最前面に表示
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func setupWindow() {
