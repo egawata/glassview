@@ -506,9 +506,9 @@ class ViewController: NSViewController {
 
         // Tips image view - 位置を調整
         tipsImageView = NSImageView(frame: NSRect(x: 200, y: 40, width: 300, height: 140))  // x位置を中央寄りに
-        if let tipsImage = NSImage(contentsOfFile: Bundle.main.bundlePath + "/Contents/Resources/../../../images/tips_reset.png") {
+        if let tipsImage = NSImage(named: "TipsResetImage") {
             tipsImageView.image = tipsImage
-        } else if let tipsImage = loadTipsImage() {
+        } else if let tipsImage = loadTipsImageFromBundle() {
             tipsImageView.image = tipsImage
         } else {
             // フォールバック：システムアイコンを使用
@@ -525,20 +525,17 @@ class ViewController: NSViewController {
         customImageView.addSubview(tipsContainerView)
     }
 
-    // Helper method to load tips image from various locations
-    private func loadTipsImage() -> NSImage? {
-        // Try different possible paths
-        let possiblePaths = [
-            "/Users/egawata/ghq/github.com/egawata/transparent_win/images/tips_reset.png",
-            "images/tips_reset.png",
-            "../images/tips_reset.png",
-            "../../images/tips_reset.png"
-        ]
+    // Helper method to load tips image from bundle resources (fallback only)
+    private func loadTipsImageFromBundle() -> NSImage? {
+        // バンドルリソースから画像を読み込み（プライマリは Assets.xcassets から）
+        if let resourcePath = Bundle.main.path(forResource: "tips_reset", ofType: "png"),
+           let image = NSImage(contentsOfFile: resourcePath) {
+            return image
+        }
 
-        for path in possiblePaths {
-            if let image = NSImage(contentsOfFile: path) {
-                return image
-            }
+        // 開発環境でのフォールバック（限定的）
+        if let image = NSImage(contentsOfFile: "images/tips_reset.png") {
+            return image
         }
 
         return nil
