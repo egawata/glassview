@@ -1,4 +1,4 @@
-# Transparent Window Capture
+# GlassView
 
 macOS上で他のアプリケーションのウィンドウをリアルタイムでキャプチャし、半透明のウィンドウで表示するSwiftアプリケーションです。
 
@@ -76,7 +76,7 @@ open TransparentWindowCapture.app
    open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
    ```
    - 「プライバシーとセキュリティ」→「スクリーン録画」を選択
-   - 「Transparent Window Capture」を許可リストに追加してチェック
+   - 「GlassView」を許可リストに追加してチェック
 
 3. **権限が正しく設定されているか確認**:
    ```bash
@@ -90,8 +90,8 @@ open TransparentWindowCapture.app
 ## 使用方法
 
 1. **アプリケーションを起動**
-   - Finderで `TransparentWindowCapture.app` をダブルクリック
-   - または `open TransparentWindowCapture.app` コマンドで起動
+   - Finderで `GlassView.app` をダブルクリック
+   - または `open GlassView.app` コマンドで起動
 
 2. **メニューバーからアクセス**
    - アプリケーション起動後、メニューバーに🎥アイコンが表示されます
@@ -208,7 +208,7 @@ open TransparentWindowCapture.app
    # システム設定を直接開く
    open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
    ```
-   - `Transparent Window Capture` または `TransparentWindowCapture` を探してチェックを入れる
+   - `GlassView` または `TransparentWindowCapture` を探してチェックを入れる
 
 2. **権限のリセット**（問題が続く場合）:
    ```bash

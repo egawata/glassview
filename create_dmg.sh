@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# TransparentWindowCapture DMG作成スクリプト
+# GlassView DMG作成スクリプト
 # 実行前に chmod +x create_dmg.sh でスクリプトに実行権限を与えてください
 
 set -e  # エラー時に停止
 
 # 変数定義
-APP_NAME="TransparentWindowCapture"
+APP_NAME="GlassView"
 VERSION="1.0"
 DMG_NAME="${APP_NAME}-${VERSION}"
 FINAL_DMG="${DMG_NAME}.dmg"
 TEMP_DMG="temp_${DMG_NAME}.dmg"
 MOUNT_POINT="/tmp/${APP_NAME}_dmg"
-APP_PATH="${APP_NAME}.app"
+APP_PATH="GlassView.app"
 
 echo "🚀 ${APP_NAME} v${VERSION} のDMG作成を開始します..."
 
@@ -81,7 +81,7 @@ tell application "Finder"
         set arrangement of viewOptions to not arranged
         set icon size of viewOptions to 72
         set background picture of viewOptions to file ".background:background.png"
-        set position of item "${APP_NAME}.app" of container window to {160, 205}
+        set position of item "GlassView.app" of container window to {160, 205}
         set position of item "Applications" of container window to {360, 205}
         close
         open

@@ -1,24 +1,24 @@
-# TransparentWindowCapture - インストール手順
+# GlassView - インストール手順
 
 ## ダウンロードとインストール
 
 ### DMGファイルからのインストール
 
-1. `TransparentWindowCapture-1.0.dmg` ファイルをダウンロードします
+1. `GlassView-1.0.dmg` ファイルをダウンロードします
 2. DMGファイルをダブルクリックしてマウントします
-3. 表示されたウィンドウで、`TransparentWindowCapture.app` を `Applications` フォルダにドラッグ&ドロップします
+3. 表示されたウィンドウで、`GlassView.app` を `Applications` フォルダにドラッグ&ドロップします
 4. DMGウィンドウを閉じ、デスクトップのDMGアイコンを右クリックして「取り出す」を選択します
 
 ### 初回起動時の設定
 
-1. Launchpadまたは Applications フォルダから `TransparentWindowCapture` を起動します
-2. 初回起動時、macOSが「開発者を確認できません」という警告を表示する場合があります：
+1. Launchpadまたは Applications フォルダから `GlassView` を起動します
+2. 初回起動時に「スクリーン録画」権限を求められたら:
    - 「キャンセル」をクリックします
    - システム設定 > プライバシーとセキュリティ を開きます
    - 「このまま開く」をクリックします
 3. スクリーン録画権限の許可を求められます：
    - 「システム設定を開く」をクリックします
-   - TransparentWindowCapture の隣のチェックボックスをオンにします
+   - GlassView の隣のチェックボックスをオンにします
    - アプリケーションを再起動します
 
 ## 使用方法
@@ -49,21 +49,21 @@
 ### スクリーン録画権限が取得できない場合
 
 1. システム設定 > プライバシーとセキュリティ > スクリーン録画
-2. TransparentWindowCapture のチェックボックスをオン
-3. アプリケーションを完全に終了してから再起動
+2. GlassView のチェックボックスをオン
+3. アプリケーションを再起動
 
 ### アプリケーションが起動しない場合
 
 1. ターミナルを開いて以下を実行：
    ```bash
-   xattr -dr com.apple.quarantine /Applications/TransparentWindowCapture.app
+   xattr -dr com.apple.quarantine /Applications/GlassView.app
    ```
 2. アプリケーションを再起動
 
 ## アンインストール
 
-1. Applications フォルダから `TransparentWindowCapture.app` をゴミ箱に移動
-2. システム設定 > プライバシーとセキュリティ > スクリーン録画 から TransparentWindowCapture のチェックを外す（オプション）
+1. Applications フォルダから `GlassView.app` をゴミ箱に移動
+2. システム設定 > プライバシーとセキュリティ > スクリーン録画 から GlassView のチェックを外す（オプション）
 
 ## ライセンス
 

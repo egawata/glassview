@@ -59,7 +59,9 @@ brew install create-dmg
 
 ## 作成されるファイル
 
-- `TransparentWindowCapture-1.0.dmg` - 配布用DMGファイル
+- `GlassView-1.0.dmg` - 配布用DMGファイル
+
+### 注意点
 - ファイルサイズ: 約450KB-870KB（スクリプトにより異なる）
 
 ## 配布方法
@@ -93,7 +95,8 @@ brew install create-dmg
 
 ### 既存のDMGファイルが削除できない
 ```bash
-rm -f TransparentWindowCapture-*.dmg
+rm -f GlassView-*.dmg
+./create_simple_dmg.sh
 ```
 
 ## 推奨ワークフロー

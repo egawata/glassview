@@ -6,10 +6,10 @@
 set -e
 
 # 変数定義
-APP_NAME="TransparentWindowCapture"
+APP_NAME="GlassView"
 VERSION="1.0"
 FINAL_DMG="${APP_NAME}-${VERSION}.dmg"
-APP_PATH="${APP_NAME}.app"
+APP_PATH="GlassView.app"
 
 echo "🚀 ${APP_NAME} v${VERSION} のDMG作成を開始します..."
 
