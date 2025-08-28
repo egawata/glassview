@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="background-color:transparent">
   <defs>
     <!-- グラデーション定義 -->
     <linearGradient id="windowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -26,8 +26,8 @@
     </filter>
   </defs>
 
-  <!-- 背景円形 -->
-  <circle cx="256" cy="256" r="240" fill="url(#windowGradient)" opacity="0.1"/>
+  <!-- 背景円形 - コメントアウトして透過背景にする -->
+  <!-- <circle cx="256" cy="256" r="240" fill="url(#windowGradient)" opacity="0.1"/> -->
 
   <!-- メインウィンドウ（奥） -->
   <rect x="120" y="140" width="200" height="160" rx="12" ry="12"

@@ -248,7 +248,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 不透明度を100%にリセット
         viewController?.resetOpacity()
-        
+
         // ウィンドウをアクティブにして最前面に表示
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
