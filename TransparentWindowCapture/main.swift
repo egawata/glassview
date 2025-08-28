@@ -566,12 +566,19 @@ class ViewController: NSViewController {
     }
 
     func resetAllToInitialState() {
-        // キャプチャを停止
-        if startCaptureButton?.title != "キャプチャ開始" {
-            windowCaptureManager?.stopCapture()
-            startCaptureButton?.title = "キャプチャ開始"
-            windowListPopup?.isEnabled = true
-        }
+        // 不透明度を初期値にリセット
+        transparencySlider?.doubleValue = 1.0
+        updateWindowTransparency()
+
+        // クリック透過を無効化
+        clickThroughButton?.title = "クリック透過: 無効"
+        updateClickThroughState(false)
+
+        // 常に手前表示を無効化
+        alwaysOnTopButton?.title = "常に手前: 無効"
+        updateAlwaysOnTopState(false)
+
+        // キャプチャは継続したまま（停止しない）
     }
 
     // MARK: - UI Control Registration
