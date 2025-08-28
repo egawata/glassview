@@ -245,6 +245,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func resetAll() {
         // 全てを初期状態に戻す
 
+        // ViewControllerを通して全てをリセット
+        viewController?.resetAllToInitialState()
+
         // 常に手前表示を無効化
         window.level = .normal
         updateAlwaysOnTopMenuState(false)
@@ -346,6 +349,11 @@ class ViewController: NSViewController {
     private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
 
+    // Tips display components
+    private var tipsContainerView: NSView!
+    private var tipsLabel: NSTextField!
+    private var tipsImageView: NSImageView!
+
     // UI Control Registry for Observer Pattern
     private let uiControlRegistry = UIControlRegistry()
 
@@ -392,6 +400,9 @@ class ViewController: NSViewController {
         customImageView.wantsLayer = true
         customImageView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         view.addSubview(customImageView)
+
+        // Setup Tips container
+        setupTipsDisplay()
 
         // Window selection popup
         windowListPopup = NSPopUpButton(frame: NSRect(x: 20, y: 86, width: 300, height: 25))
@@ -468,6 +479,101 @@ class ViewController: NSViewController {
         registerUIControls()
     }
 
+    // MARK: - Tips Display Setup
+    private func setupTipsDisplay() {
+        // Tips container view (centered in capture area) - サイズを調整
+        let containerWidth: CGFloat = 700  // 幅を拡大
+        let containerHeight: CGFloat = 350  // 高さを拡大
+        let containerX = customImageView.frame.midX - (containerWidth / 2)
+        let containerY = customImageView.frame.midY - (containerHeight / 2)
+
+        tipsContainerView = NSView(frame: NSRect(x: containerX, y: containerY, width: containerWidth, height: containerHeight))
+        tipsContainerView.wantsLayer = true
+        tipsContainerView.layer?.backgroundColor = NSColor.clear.cgColor
+
+        // Tips label - レイアウトを調整
+        tipsLabel = NSTextField(frame: NSRect(x: 50, y: 220, width: 600, height: 90))  // y位置を上に、高さを拡大
+        tipsLabel.stringValue = "Tips:\n画面操作に困ったらデスクトップ上部メニューバーの\n「全てリセット」を選択してください"
+        tipsLabel.isEditable = false
+        tipsLabel.isBordered = false
+        tipsLabel.backgroundColor = NSColor.clear
+        tipsLabel.textColor = NSColor.secondaryLabelColor
+        tipsLabel.font = NSFont.systemFont(ofSize: 16)
+        tipsLabel.alignment = .center
+        tipsLabel.maximumNumberOfLines = 3  // 行数を3行に拡張
+        tipsLabel.cell?.wraps = true
+        tipsLabel.cell?.isScrollable = false
+
+        // Tips image view - 位置を調整
+        tipsImageView = NSImageView(frame: NSRect(x: 200, y: 40, width: 300, height: 140))  // x位置を中央寄りに
+        if let tipsImage = NSImage(contentsOfFile: Bundle.main.bundlePath + "/Contents/Resources/../../../images/tips_reset.png") {
+            tipsImageView.image = tipsImage
+        } else if let tipsImage = loadTipsImage() {
+            tipsImageView.image = tipsImage
+        } else {
+            // フォールバック：システムアイコンを使用
+            tipsImageView.image = NSImage(systemSymbolName: "arrow.clockwise.circle", accessibilityDescription: "Reset")
+        }
+        tipsImageView.imageScaling = .scaleProportionallyUpOrDown
+        tipsImageView.imageAlignment = .alignCenter
+
+        // Add subviews to container
+        tipsContainerView.addSubview(tipsLabel)
+        tipsContainerView.addSubview(tipsImageView)
+
+        // Add container to custom image view
+        customImageView.addSubview(tipsContainerView)
+    }
+
+    // Helper method to load tips image from various locations
+    private func loadTipsImage() -> NSImage? {
+        // Try different possible paths
+        let possiblePaths = [
+            "/Users/egawata/ghq/github.com/egawata/transparent_win/images/tips_reset.png",
+            "images/tips_reset.png",
+            "../images/tips_reset.png",
+            "../../images/tips_reset.png"
+        ]
+
+        for path in possiblePaths {
+            if let image = NSImage(contentsOfFile: path) {
+                return image
+            }
+        }
+
+        return nil
+    }
+
+    // MARK: - Tips Display Control
+    private func showTipsDisplay() {
+        tipsContainerView?.isHidden = false
+        tipsContainerView?.alphaValue = 1.0
+    }
+
+    private func hideTipsDisplay() {
+        // Animate fade out
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.3
+            tipsContainerView?.animator().alphaValue = 0.0
+        } completionHandler: {
+            self.tipsContainerView?.isHidden = true
+        }
+    }
+
+    // Public methods for AppDelegate access
+    func showTips() {
+        showTipsDisplay()
+    }
+
+    func resetAllToInitialState() {
+        // キャプチャを停止
+        if startCaptureButton?.title != "キャプチャ開始" {
+            windowCaptureManager?.stopCapture()
+            startCaptureButton?.title = "キャプチャ開始"
+            windowListPopup?.isEnabled = true
+        }
+    }
+
     // MARK: - UI Control Registration
     private func registerUIControls() {
         // Register all buttons and controls that should be managed by the registry
@@ -517,6 +623,9 @@ class ViewController: NSViewController {
 
             sender.title = "キャプチャ停止"
             windowListPopup.isEnabled = false
+
+            // Hide tips display when capture starts
+            hideTipsDisplay()
         } else {
             windowCaptureManager?.stopCapture()
             sender.title = "キャプチャ開始"
@@ -735,11 +844,26 @@ class ViewController: NSViewController {
         // フレームを更新
         customImageView.frame = newFrame
 
+        // Update tips container position
+        updateTipsContainerLayout()
+
         // 現在の画像がある場合は再描画をトリガー
         if let currentImage = customImageView.image {
             customImageView.image = currentImage
             customImageView.needsDisplay = true
         }
+    }
+
+    private func updateTipsContainerLayout() {
+        guard let tipsContainer = tipsContainerView else { return }
+
+        // Recalculate tips container position centered in capture area - サイズを調整後の値に更新
+        let containerWidth: CGFloat = 700  // setupTipsDisplay()と同じ値
+        let containerHeight: CGFloat = 350  // setupTipsDisplay()と同じ値
+        let containerX = (customImageView.frame.width - containerWidth) / 2
+        let containerY = (customImageView.frame.height - containerHeight) / 2
+
+        tipsContainer.frame = NSRect(x: containerX, y: containerY, width: containerWidth, height: containerHeight)
     }
 
     deinit {
