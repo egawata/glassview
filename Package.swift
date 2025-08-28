@@ -2,14 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "TransparentWindowCapture",
+    name: "GlassView",
     defaultLocalization: "en",
     platforms: [
         .macOS(.v12)
     ],
     products: [
         .executable(
-            name: "TransparentWindowCapture",
+            name: "GlassView",
             targets: ["TransparentWindowCapture"]
         ),
     ],
