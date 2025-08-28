@@ -131,7 +131,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusBarItem?.button {
-            button.image = NSImage(systemSymbolName: "video.circle", accessibilityDescription: "GlassView")
+            // カスタムアイコンを使用（アプリケーションアイコンと同じテイスト）
+            if let iconImage = NSImage(named: "StatusBarIcon") {
+                // ステータスバー用にサイズを調整
+                iconImage.size = NSSize(width: 18, height: 18)
+                iconImage.isTemplate = true // ダークモード対応
+                button.image = iconImage
+            } else {
+                // フォールバック：システムシンボル
+                button.image = NSImage(systemSymbolName: "video.circle", accessibilityDescription: "GlassView")
+            }
             button.toolTip = "GlassView"
         }
 
