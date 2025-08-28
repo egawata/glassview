@@ -34,28 +34,28 @@ swift build --configuration release
 swift build --configuration release
 
 # 既存のアプリバンドルをバックアップ（初回は不要）
-mv TransparentWindowCapture.app TransparentWindowCapture.app.old 2>/dev/null || true
+mv GlassView.app GlassView.app.old 2>/dev/null || true
 
 # 新しいアプリバンドル構造を作成
-mkdir -p TransparentWindowCapture.app/Contents/{MacOS,Resources}
+mkdir -p GlassView.app/Contents/{MacOS,Resources}
 
 # 実行可能ファイルをコピー
-cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/
+cp .build/release/TransparentWindowCapture GlassView.app/Contents/MacOS/
 
 # Info.plistを作成（自動生成済み）
 
 # コード署名を適用
-codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
 
 # 実行権限を設定
-chmod +x TransparentWindowCapture.app/Contents/MacOS/TransparentWindowCapture
+chmod +x GlassView.app/Contents/MacOS/TransparentWindowCapture
 ```
 
 ### 3. アプリケーションの起動
 
 ```bash
 # Finderからアイコンで起動（推奨）
-open TransparentWindowCapture.app
+open GlassView.app
 
 # または、コマンドラインから直接実行
 ./.build/release/TransparentWindowCapture
@@ -67,7 +67,7 @@ open TransparentWindowCapture.app
 
 1. **自動的に表示される場合**:
    - ダイアログで「システム設定を開く」をクリック
-   - 「Transparent Window Capture」にチェックを入れる
+   - 「GlassView」にチェックを入れる
    - アプリケーションを再起動
 
 2. **手動で設定する場合**:
@@ -81,7 +81,7 @@ open TransparentWindowCapture.app
 3. **権限が正しく設定されているか確認**:
    ```bash
    # 権限状況を確認
-   sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db "SELECT service, client, auth_value FROM access WHERE service='kTCCServiceScreenCapture' AND client LIKE '%TransparentWindowCapture%';" 2>/dev/null
+   sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db "SELECT service, client, auth_value FROM access WHERE service='kTCCServiceScreenCapture' AND client LIKE '%GlassView%';" 2>/dev/null
    ```
    - `auth_value` が `2` になっていれば権限が許可されています
 
@@ -127,13 +127,13 @@ swift build --configuration release
 pkill -f "TransparentWindowCapture" 2>/dev/null || true
 
 # 3. 実行可能ファイルを更新
-cp .build/release/TransparentWindowCapture TransparentWindowCapture.app/Contents/MacOS/
+cp .build/release/TransparentWindowCapture GlassView.app/Contents/MacOS/
 
 # 4. 再コード署名
-codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
 
 # 5. アプリ起動
-open TransparentWindowCapture.app
+open GlassView.app
 ```
 
 ### ワンライナー更新コマンド
@@ -141,14 +141,26 @@ open TransparentWindowCapture.app
 開発中によく使う更新作業をワンライナーでまとめました：
 
 ```bash
-```bash
 # 最新コードでアプリを更新して起動（Xcodeビルドシステム使用）
-xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release build &&
+xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build &&
 pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true &&
-rm -rf TransparentWindowCapture.app &&
-cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/TransparentWindowCapture.app . &&
+rm -rf GlassView.app &&
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app . &&
 sleep 1 &&
-open TransparentWindowCapture.app
+open GlassView.app
+```
+
+**注意**: コード署名エラーが発生する場合は、以下の代替手順を試してください：
+
+```bash
+# コード署名エラーの対処版
+xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build &&
+pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true &&
+rm -rf GlassView.app &&
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app . &&
+codesign --force --sign - --deep GlassView.app &&
+sleep 1 &&
+open GlassView.app
 ```
 
 ## 機能の使用シナリオ例
@@ -216,7 +228,7 @@ open TransparentWindowCapture.app
    tccutil reset ScreenCapture com.example.TransparentWindowCapture
 
    # アプリケーションを再起動
-   open TransparentWindowCapture.app
+   open GlassView.app
    ```
 
 3. **完全リセット手順**:
@@ -228,10 +240,10 @@ open TransparentWindowCapture.app
    tccutil reset ScreenCapture com.example.TransparentWindowCapture
 
    # アプリ再署名
-   codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements TransparentWindowCapture.app
+   codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
 
    # アプリ起動
-   open TransparentWindowCapture.app
+   open GlassView.app
    ```
 
 ### その他の問題
@@ -259,10 +271,10 @@ open TransparentWindowCapture.app
 xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build && \
 pkill -9 -f "TransparentWindowCapture" 2>/dev/null || true && \
 tccutil reset ScreenCapture com.example.TransparentWindowCapture && \
-rm -rf TransparentWindowCapture.app && \
-cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/TransparentWindowCapture.app . && \
+rm -rf GlassView.app && \
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app . && \
 sleep 1 && \
-open TransparentWindowCapture.app
+open GlassView.app
 ```
 
 ## 開発者向け情報
@@ -275,7 +287,7 @@ TransparentWindowCapture/
 │   ├── Info.plist                          # アプリケーション情報
 │   ├── TransparentWindowCapture.entitlements  # アプリ権限設定
 │   └── Assets.xcassets/                    # アプリアイコンとアセット
-├── TransparentWindowCapture.app/           # 実行可能なアプリケーションバンドル
+├── GlassView.app/                           # 実行可能なアプリケーションバンドル
 ├── Package.swift                           # Swift Package Manager設定
 └── README.md
 ```

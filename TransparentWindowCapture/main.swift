@@ -144,8 +144,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusBarItem?.button {
-            button.image = NSImage(systemSymbolName: "video.circle", accessibilityDescription: "TransparentWindowCapture")
-            button.toolTip = "TransparentWindowCapture"
+            button.image = NSImage(systemSymbolName: "video.circle", accessibilityDescription: "GlassView")
+            button.toolTip = "GlassView"
         }
 
         setupStatusBarMenu()
@@ -281,7 +281,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
 
-        window.title = "Transparent Window Capture"
+        window.title = "GlassView"
         window.center()
 
         // 最小ウィンドウサイズを設定（UI要素が正常に表示できる最小サイズ）
