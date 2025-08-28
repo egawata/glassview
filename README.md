@@ -288,4 +288,4 @@ TransparentWindowCapture/
 
 ## ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。
+このプロジェクトはApache License 2.0の下で公開されています。詳細については[LICENSE](LICENSE)ファイルをご覧ください。
