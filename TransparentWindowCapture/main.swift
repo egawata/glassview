@@ -103,11 +103,6 @@ class ClickThroughWindow: NSWindow {
     }
 }
 
-// MARK: - Notification Names
-extension Notification.Name {
-    static let captureAreaOnlyModeChanged = Notification.Name("captureAreaOnlyModeChanged")
-}
-
 // MARK: - App Delegate
 @available(macOS 12.3, *)
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -118,14 +113,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusBarItem()
         setupWindow()
-
-        // 通知を監視
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(captureAreaOnlyModeChanged(_:)),
-            name: .captureAreaOnlyModeChanged,
-            object: nil
-        )
 
         // 初期状態でメニューバーの状態を同期
         updateAllMenuStates()
@@ -161,15 +148,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 全体クリック透過の切り替えメニューアイテム
-        let clickThroughItem = NSMenuItem(title: "全体クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "")
+        // クリック透過の切り替えメニューアイテム
+        let clickThroughItem = NSMenuItem(title: "クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "")
         clickThroughItem.target = self
         menu.addItem(clickThroughItem)
-
-        // キャプチャエリアのみクリック透過の切り替えメニューアイテム
-        let captureAreaOnlyItem = NSMenuItem(title: "キャプチャエリアのみクリック透過", action: #selector(toggleCaptureAreaOnly), keyEquivalent: "")
-        captureAreaOnlyItem.target = self
-        menu.addItem(captureAreaOnlyItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -228,35 +210,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // ViewControllerに状態を通知
         viewController?.updateClickThroughState(!isCurrentlyClickThrough)
-
-        // 全体クリック透過が有効になった場合、キャプチャエリアのみモードは無効にする
-        if !isCurrentlyClickThrough {
-            NotificationCenter.default.post(name: .captureAreaOnlyModeChanged, object: false)
-        }
     }
 
-    // メニューバーの全体クリック透過の状態を更新するメソッド
+    // メニューバーのクリック透過の状態を更新するメソッド
     func updateClickThroughMenuState(_ isEnabled: Bool) {
         if let menu = statusBarItem?.menu,
            let clickThroughItem = menu.item(at: 2) {
-            clickThroughItem.title = "全体クリック透過"
+            clickThroughItem.title = "クリック透過"
             clickThroughItem.state = isEnabled ? .on : .off
-        }
-    }
-
-    @objc private func toggleCaptureAreaOnly() {
-        // ViewControllerのキャプチャエリアのみクリック無視を切り替え
-        viewController?.toggleCaptureAreaOnlyMode()
-    }
-
-    @objc private func captureAreaOnlyModeChanged(_ notification: Notification) {
-        guard let isEnabled = notification.object as? Bool else { return }
-
-        // メニューアイテムのタイトルを更新
-        if let menu = statusBarItem?.menu,
-           let captureAreaOnlyItem = menu.item(at: 3) {
-            captureAreaOnlyItem.title = "キャプチャエリアのみクリック透過"
-            captureAreaOnlyItem.state = isEnabled ? .on : .off
         }
     }
 
@@ -350,7 +311,6 @@ class ViewController: NSViewController {
     private var refreshButton: NSButton!
     private var transparencySlider: NSSlider!
     private var clickThroughButton: NSButton!
-    private var captureAreaOnlyButton: NSButton!
     private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
 
@@ -362,12 +322,6 @@ class ViewController: NSViewController {
     private var availableWindows: [SCWindow] = []
     private var isClickThroughEnabled = false
     private var isAlwaysOnTopEnabled = false
-    private var isCaptureAreaOnlyMode = false {
-        didSet {
-            // AppDelegateがアクセスできるように通知を送信
-            NotificationCenter.default.post(name: .captureAreaOnlyModeChanged, object: isCaptureAreaOnlyMode)
-        }
-    }
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -446,21 +400,14 @@ class ViewController: NSViewController {
 
         // Click-through buttons (3rd row)
         clickThroughButton = NSButton(frame: NSRect(x: 20, y: 31, width: 130, height: 32))
-        clickThroughButton.title = "全体クリック透過"
+        clickThroughButton.title = "クリック透過"
         clickThroughButton.bezelStyle = .rounded
         clickThroughButton.target = self
         clickThroughButton.action = #selector(clickThroughButtonClicked(_:))
         view.addSubview(clickThroughButton)
 
-        captureAreaOnlyButton = NSButton(frame: NSRect(x: 160, y: 31, width: 150, height: 32))
-        captureAreaOnlyButton.title = "キャプチャ部のみ透過"
-        captureAreaOnlyButton.bezelStyle = .rounded
-        captureAreaOnlyButton.target = self
-        captureAreaOnlyButton.action = #selector(captureAreaOnlyButtonClicked(_:))
-        view.addSubview(captureAreaOnlyButton)
-
         // Always on top button
-        alwaysOnTopButton = NSButton(frame: NSRect(x: 320, y: 31, width: 120, height: 32))
+        alwaysOnTopButton = NSButton(frame: NSRect(x: 160, y: 31, width: 120, height: 32))
         alwaysOnTopButton.title = "常に手前表示"
         alwaysOnTopButton.bezelStyle = .rounded
         alwaysOnTopButton.target = self
@@ -468,7 +415,7 @@ class ViewController: NSViewController {
         view.addSubview(alwaysOnTopButton)
 
         // Status label (3rd row)
-        statusLabel = NSTextField(frame: NSRect(x: 450, y: 37, width: 320, height: 20))
+        statusLabel = NSTextField(frame: NSRect(x: 290, y: 37, width: 480, height: 20))
         statusLabel.isEditable = false
         statusLabel.isBordered = false
         statusLabel.backgroundColor = NSColor.clear
@@ -495,7 +442,6 @@ class ViewController: NSViewController {
         uiControlRegistry.register(startCaptureButton)
         uiControlRegistry.register(refreshButton)
         uiControlRegistry.register(windowListPopup)
-        uiControlRegistry.register(captureAreaOnlyButton)
         uiControlRegistry.register(alwaysOnTopButton)
         uiControlRegistry.register(transparencySlider)
         uiControlRegistry.register(clickThroughButton)  // クリック透過ボタンも登録
@@ -520,10 +466,6 @@ class ViewController: NSViewController {
     // MARK: - Action Methods
     @objc private func clickThroughButtonClicked(_ sender: NSButton) {
         toggleClickThrough()
-    }
-
-    @objc private func captureAreaOnlyButtonClicked(_ sender: NSButton) {
-        toggleCaptureAreaOnlyModeInternal()
     }
 
     @objc private func alwaysOnTopButtonClicked(_ sender: NSButton) {
@@ -572,14 +514,8 @@ class ViewController: NSViewController {
     private func toggleAlwaysOnTop() {
         isAlwaysOnTopEnabled.toggle()
 
-        // ウィンドウレベルを更新（キャプチャエリアのみモードも考慮）
-        if isCaptureAreaOnlyMode {
-            // キャプチャエリアのみモードの場合は、専用レベルを維持
-            view.window?.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
-        } else {
-            // 通常モードの場合は、常に手前表示の状態に応じて設定
-            view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
-        }
+        // ウィンドウレベルを更新
+        view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
 
         // AppDelegateのメニュー状態も更新
         if let appDelegate = NSApp.delegate as? AppDelegate {
@@ -599,7 +535,6 @@ class ViewController: NSViewController {
     // MARK: - Click Through Methods
     private func toggleClickThrough() {
         isClickThroughEnabled.toggle()
-        isCaptureAreaOnlyMode = false // 排他的モード
 
         // カスタムウィンドウのクリック透過設定を使用
         (view.window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(isClickThroughEnabled)
@@ -608,35 +543,7 @@ class ViewController: NSViewController {
         // AppDelegateのメニュー状態も更新
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.updateClickThroughMenuState(isClickThroughEnabled)
-            // キャプチャエリアのみモードも無効になったことを通知
-            if !isCaptureAreaOnlyMode {
-                NotificationCenter.default.post(name: .captureAreaOnlyModeChanged, object: false)
-            }
         }
-
-        updateButtonTitles()
-        updateStatusLabel()
-    }
-
-    private func toggleCaptureAreaOnlyModeInternal() {
-        isCaptureAreaOnlyMode.toggle()
-        isClickThroughEnabled = false // 排他的モード
-
-        // 全体のクリック透過は無効にし、キャプチャエリアのみ設定
-        (view.window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(false)
-        customImageView?.setClickThroughEnabled(isCaptureAreaOnlyMode)
-
-        if isCaptureAreaOnlyMode {
-            // キャプチャエリアのみクリック透過の場合、ウィンドウレベルを少し上げる
-            // これにより、他のアプリケーションのクリックがより確実に背後に透過される
-            view.window?.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
-        } else {
-            // 通常状態または常に手前表示の状態に戻す
-            view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
-        }
-
-        // メニューバーのチェック状態も更新（通知を通じて）
-        // isCaptureAreaOnlyModeのdidSetで通知が送信される
 
         updateButtonTitles()
         updateStatusLabel()
@@ -644,24 +551,16 @@ class ViewController: NSViewController {
 
     func updateClickThroughState(_ enabled: Bool) {
         isClickThroughEnabled = enabled
-        if enabled {
-            isCaptureAreaOnlyMode = false // 排他的モード
-        }
         customImageView?.setClickThroughEnabled(false)
         updateButtonTitles()
         updateStatusLabel()
     }
 
-    func toggleCaptureAreaOnlyMode() {
-        toggleCaptureAreaOnlyModeInternal()
-    }
-
     private func updateButtonTitles() {
-        clickThroughButton?.title = isClickThroughEnabled ? "✓ 全体クリック透過" : "全体クリック透過"
-        captureAreaOnlyButton?.title = isCaptureAreaOnlyMode ? "✓ キャプチャ部のみ透過" : "キャプチャ部のみ透過"
+        clickThroughButton?.title = isClickThroughEnabled ? "✓ クリック透過" : "クリック透過"
         alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "✓ 常に手前表示" : "常に手前表示"
 
-        // 全体クリック透過が有効な場合、他のボタンを無効化してUIの分かりやすさを向上
+        // クリック透過が有効な場合、他のボタンを無効化してUIの分かりやすさを向上
         updateButtonStatesForClickThrough()
     }
 
@@ -694,11 +593,8 @@ class ViewController: NSViewController {
 
         // Click Through状態
         if isClickThroughEnabled {
-            statusParts.append("クリック透過: 全体")
+            statusParts.append("クリック透過: 有効")
             color = .systemGreen
-        } else if isCaptureAreaOnlyMode {
-            statusParts.append("クリック透過: キャプチャ部のみ")
-            color = .systemOrange
         } else {
             statusParts.append("クリック透過: 無効")
             if !isAlwaysOnTopEnabled {
