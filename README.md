@@ -27,29 +27,16 @@ cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapt
 
 初回起動時に、システムから `スクリーン録画` 権限の許可を求められます：
 
-1. **自動的に表示される場合**:
-   - ダイアログで `システム設定を開く`をクリック
-   - `GlassView` にチェックを入れる
-   - アプリケーションを再起動
-
-2. **手動で設定する場合**:
-   ```bash
-   # システム設定を直接開く
-   open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
-   ```
-   - `プライバシーとセキュリティ` → `スクリーン録画` を選択
-   - `GlassView` を許可リストに追加してチェック
-
-3. **権限が正しく設定されているか確認**:
-   ```bash
-   # 権限状況を確認
-   sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db "SELECT service, client, auth_value FROM access WHERE service='kTCCServiceScreenCapture' AND client LIKE '%GlassView%';" 2>/dev/null
-   ```
-   - `auth_value` が `2` になっていれば権限が許可されています
-
-**注意**: 権限設定後は必ずアプリケーションを再起動してください。
+- ダイアログで `システム設定を開く`をクリック
+- `GlassView` にチェックを入れる
+- アプリケーションを再起動
 
 ## 使用方法
+
+### 基本操作
+
+- ウィンドウ選択プルダウンから表示したいウィンドウを選択
+- その横の `キャプチャ開始` ボタンを押す
 
 ### ウィンドウ上の操作
 
