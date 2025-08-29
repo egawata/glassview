@@ -345,6 +345,8 @@ class ViewController: NSViewController {
     private var startCaptureButton: NSButton!
     private var refreshButton: NSButton!
     private var transparencySlider: NSSlider!
+    private var frameRateSlider: NSSlider!
+    private var frameRateTextField: NSTextField!
     private var clickThroughButton: NSButton!
     private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
@@ -362,6 +364,7 @@ class ViewController: NSViewController {
     private var availableWindows: [SCWindow] = []
     private var isClickThroughEnabled = false
     private var isAlwaysOnTopEnabled = false
+    private var currentFrameRate: Double = 10.0 // 初期値を10fpsに設定
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -425,7 +428,7 @@ class ViewController: NSViewController {
         refreshButton.action = #selector(refreshWindowListClicked(_:))
         view.addSubview(refreshButton)
 
-        // Transparency label and slider (2nd row)
+        // Transparency label and slider (2nd row) - サイズを調整
         let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 61, width: 70, height: 16))
         transparencyLabel.stringValue = "不透明度:"
         transparencyLabel.isEditable = false
@@ -433,13 +436,36 @@ class ViewController: NSViewController {
         transparencyLabel.backgroundColor = NSColor.clear
         view.addSubview(transparencyLabel)
 
-        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 57, width: 685, height: 25))
+        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 57, width: 300, height: 25)) // 幅を300に短縮
         transparencySlider.minValue = 0.1
         transparencySlider.maxValue = 1.0
         transparencySlider.doubleValue = 1.0
         transparencySlider.target = self
         transparencySlider.action = #selector(transparencySliderChanged(_:))
         view.addSubview(transparencySlider)
+
+        // Frame rate label and controls (2nd row) - 不透明度の右側に配置
+        let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 61, width: 30, height: 16))
+        frameRateLabel.stringValue = "fps:"
+        frameRateLabel.isEditable = false
+        frameRateLabel.isBordered = false
+        frameRateLabel.backgroundColor = NSColor.clear
+        view.addSubview(frameRateLabel)
+
+        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 57, width: 180, height: 25))
+        frameRateSlider.minValue = 1.0
+        frameRateSlider.maxValue = 60.0
+        frameRateSlider.doubleValue = currentFrameRate
+        frameRateSlider.target = self
+        frameRateSlider.action = #selector(frameRateSliderChanged(_:))
+        view.addSubview(frameRateSlider)
+
+        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 57, width: 50, height: 25))
+        frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
+        frameRateTextField.isEditable = true
+        frameRateTextField.target = self
+        frameRateTextField.action = #selector(frameRateTextFieldChanged(_:))
+        view.addSubview(frameRateTextField)
 
         // Click-through buttons (3rd row)
         clickThroughButton = NSButton(frame: NSRect(x: 20, y: 31, width: 130, height: 32))
@@ -575,6 +601,8 @@ class ViewController: NSViewController {
         alwaysOnTopButton?.title = "常に手前: 無効"
         updateAlwaysOnTopState(false)
 
+        // フレームレートはリセット対象外（現在の値を維持）
+
         // キャプチャは継続したまま（停止しない）
     }
 
@@ -586,6 +614,8 @@ class ViewController: NSViewController {
         uiControlRegistry.register(windowListPopup)
         uiControlRegistry.register(alwaysOnTopButton)
         uiControlRegistry.register(transparencySlider)
+        uiControlRegistry.register(frameRateSlider)
+        uiControlRegistry.register(frameRateTextField)
         uiControlRegistry.register(clickThroughButton)  // クリック透過ボタンも登録
     }
 
@@ -623,7 +653,7 @@ class ViewController: NSViewController {
             }
 
             let selectedWindow = availableWindows[selectedIndex]
-            windowCaptureManager?.startCapture(for: selectedWindow)
+            windowCaptureManager?.startCapture(for: selectedWindow, frameRate: currentFrameRate)
 
             sender.title = "キャプチャ停止"
             windowListPopup.isEnabled = false
@@ -646,6 +676,33 @@ class ViewController: NSViewController {
 
     @objc private func transparencySliderChanged(_ sender: NSSlider) {
         updateWindowTransparency()
+    }
+
+    @objc private func frameRateSliderChanged(_ sender: NSSlider) {
+        currentFrameRate = sender.doubleValue
+        frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
+        
+        // キャプチャ中の場合、新しいフレームレートで再開
+        if startCaptureButton.title == "キャプチャ停止" {
+            windowCaptureManager?.updateFrameRate(currentFrameRate)
+        }
+    }
+
+    @objc private func frameRateTextFieldChanged(_ sender: NSTextField) {
+        if let value = Double(sender.stringValue) {
+            let clampedValue = max(1.0, min(60.0, value))
+            currentFrameRate = clampedValue
+            frameRateSlider.doubleValue = clampedValue
+            frameRateTextField.stringValue = String(format: "%.0f", clampedValue)
+            
+            // キャプチャ中の場合、新しいフレームレートで再開
+            if startCaptureButton.title == "キャプチャ停止" {
+                windowCaptureManager?.updateFrameRate(currentFrameRate)
+            }
+        } else {
+            // 無効な入力の場合、現在の値に戻す
+            frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
+        }
     }
 
     // MARK: - Opacity Reset Methods
@@ -910,11 +967,12 @@ class WindowCaptureManager: NSObject, @unchecked Sendable {
     private var captureTimer: Timer?
     private var selectedWindow: SCWindow?
 
-    func startCapture(for window: SCWindow) {
+    func startCapture(for window: SCWindow, frameRate: Double = 30.0) {
         selectedWindow = window
 
-        // タイマーでキャプチャを開始（フレームレート制限）
-        captureTimer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { _ in
+        // タイマーでキャプチャを開始（指定されたフレームレート）
+        let interval = 1.0 / frameRate
+        captureTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             self.captureFrame()
         }
     }
@@ -923,6 +981,19 @@ class WindowCaptureManager: NSObject, @unchecked Sendable {
         captureTimer?.invalidate()
         captureTimer = nil
         selectedWindow = nil
+    }
+
+    func updateFrameRate(_ frameRate: Double) {
+        guard selectedWindow != nil else { return }
+        
+        // 現在のキャプチャを停止
+        captureTimer?.invalidate()
+        
+        // 新しいフレームレートでキャプチャを再開
+        let interval = 1.0 / frameRate
+        captureTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            self.captureFrame()
+        }
     }
 
     private func captureFrame() {
