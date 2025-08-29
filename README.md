@@ -4,7 +4,7 @@ macOS上で他のアプリケーションのウィンドウをリアルタイム
 
 ## 必要要件
 
-- macOS 12.3以上 
+- macOS 12.3以上
 
 ## インストール
 
@@ -13,6 +13,21 @@ macOS上で他のアプリケーションのウィンドウをリアルタイム
 https://github.com/egawata/glassview/releases/tag/v0.1 から `.dmg` ファイルをダウンロードし、インストールを行ってください。
 
 ### ソースコードからビルド
+
+#### 方法 1: Swift Package Manager を使用（推奨）
+
+~~~sh
+# Swift Package Manager でビルド
+swift build -c release
+pkill -9 -f "TransparentWindowCapture\|GlassView" 2>/dev/null || true
+rm -rf GlassView.app
+cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app . 2>/dev/null || mkdir -p GlassView.app/Contents/{MacOS,Resources}
+cp .build/release/GlassView GlassView.app/Contents/MacOS/
+cp TransparentWindowCapture/Info.plist GlassView.app/Contents/
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
+~~~
+
+#### 方法 2: Xcode ビルドシステムを使用
 
 ~~~sh
 xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build
@@ -69,6 +84,27 @@ cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapt
 
 機能を追加・修正した場合は、以下の手順でアプリケーションを更新してください：
 
+### 方法 1: Swift Package Manager を使用（推奨）
+
+```bash
+# 1. リリースビルド
+swift build -c release
+
+# 2. 実行中のアプリを停止
+pkill -f "TransparentWindowCapture\|GlassView" 2>/dev/null || true
+
+# 3. 実行可能ファイルを更新
+cp .build/release/GlassView GlassView.app/Contents/MacOS/
+
+# 4. 再コード署名
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
+
+# 5. アプリ起動
+open GlassView.app
+```
+
+### 方法 2: Xcode ビルドシステムを使用
+
 ```bash
 # 1. リリースビルド
 xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build
@@ -89,6 +125,20 @@ open GlassView.app
 ### ワンライナー更新コマンド
 
 開発中によく使う更新作業をワンライナーでまとめました：
+
+#### Swift Package Manager を使用（推奨）
+
+```bash
+# 最新コードでアプリを更新して起動（Swift Package Manager使用）
+swift build -c release &&
+pkill -9 -f "TransparentWindowCapture\|GlassView" 2>/dev/null || true &&
+cp .build/release/GlassView GlassView.app/Contents/MacOS/ &&
+codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app &&
+sleep 1 &&
+open GlassView.app
+```
+
+#### Xcodeビルドシステムを使用
 
 ```bash
 # 最新コードでアプリを更新して起動（Xcodeビルドシステム使用）

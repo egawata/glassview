@@ -122,6 +122,12 @@ Thumbs.db
 *.app
 *.dmg
 
+# Code signing and notarization (private)
+private/
+*.zip
+*-notarize.zip
+*.entitlements.plist
+
 # Backup files
 *.backup
 *.bak
