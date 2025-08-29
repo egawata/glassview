@@ -7,7 +7,7 @@ set -e
 
 # 変数定義
 APP_NAME="GlassView"
-VERSION="1.0"
+VERSION="v0.1"
 FINAL_DMG="${APP_NAME}-${VERSION}.dmg"
 APP_PATH="GlassView.app"
 
