@@ -22,14 +22,82 @@ import ScreenCaptureKit
 class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
     var window: NSWindow!
     var controlPanelWindow: NSWindow!
-    private var statusBarItem: NSStatusItem?
     private var viewController: ViewController?
     private var controlPanelController: ControlPanelViewController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupStatusBarItem()
         setupWindow()
         setupControlPanelWindow()
+        setupMainMenu()
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        // アプリケーションメニュー
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu()
+
+        // 終了
+        let quitItem = NSMenuItem(title: "終了", action: #selector(quitApplication), keyEquivalent: "q")
+        quitItem.target = self
+        quitItem.keyEquivalentModifierMask = [.command]
+        appMenu.addItem(quitItem)
+
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        // 表示メニュー
+        let viewMenuItem = NSMenuItem(title: "表示", action: nil, keyEquivalent: "")
+        let viewMenu = NSMenu(title: "表示")
+
+        // 全てリセット
+        let resetAllItem = NSMenuItem(title: "全てリセット", action: #selector(resetAll), keyEquivalent: "r")
+        resetAllItem.target = self
+        resetAllItem.keyEquivalentModifierMask = [.command]
+        viewMenu.addItem(resetAllItem)
+
+        viewMenu.addItem(NSMenuItem.separator())
+
+        // 常に手前に表示
+        let alwaysOnTopMenuItem = NSMenuItem(title: "常に手前に表示", action: #selector(toggleAlwaysOnTop), keyEquivalent: "f")
+        alwaysOnTopMenuItem.target = self
+        alwaysOnTopMenuItem.keyEquivalentModifierMask = [.command]
+        viewMenu.addItem(alwaysOnTopMenuItem)
+
+        // クリック透過
+        let clickThroughMenuItem = NSMenuItem(title: "クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "t")
+        clickThroughMenuItem.target = self
+        clickThroughMenuItem.keyEquivalentModifierMask = [.command]
+        viewMenu.addItem(clickThroughMenuItem)
+
+        viewMenu.addItem(NSMenuItem.separator())
+
+        // 不透明度をリセット
+        let resetOpacityMenuItem = NSMenuItem(title: "不透明度をリセット", action: #selector(resetOpacity), keyEquivalent: "o")
+        resetOpacityMenuItem.target = self
+        resetOpacityMenuItem.keyEquivalentModifierMask = [.command]
+        viewMenu.addItem(resetOpacityMenuItem)
+
+        viewMenuItem.submenu = viewMenu
+        mainMenu.addItem(viewMenuItem)
+
+        // ウィンドウメニュー
+        let windowMenuItem = NSMenuItem(title: "ウィンドウ", action: nil, keyEquivalent: "")
+        let windowMenu = NSMenu(title: "ウィンドウ")
+
+        // ウィンドウを表示
+        let showWindowMenuItem = NSMenuItem(title: "ウィンドウを表示", action: #selector(showMainWindow), keyEquivalent: "w")
+        showWindowMenuItem.target = self
+        showWindowMenuItem.keyEquivalentModifierMask = [.command]
+        windowMenu.addItem(showWindowMenuItem)
+
+        windowMenuItem.submenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+
+        NSApplication.shared.mainMenu = mainMenu
+
+        // 初期状態を更新
         updateAllMenuStates()
     }
 
@@ -46,60 +114,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         controlPanelController?.updateClickThroughState(isClickThrough)
     }
 
-    private func setupStatusBarItem() {
-        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
-        if let button = statusBarItem?.button {
-            // カスタムアイコンを使用
-            if let iconImage = NSImage(named: "StatusBarIcon") {
-                // ステータスバー用にサイズを調整
-                iconImage.size = NSSize(width: 18, height: 18)
-                iconImage.isTemplate = true // ダークモード対応
-                button.image = iconImage
-            } else {
-                // fallback
-                button.image = NSImage(systemSymbolName: "video.circle", accessibilityDescription: "GlassView")
-            }
-            button.toolTip = "GlassView"
-        }
-
-        setupStatusBarMenu()
-    }
-
-    private func setupStatusBarMenu() {
-        let menu = NSMenu()
-
-        let resetAllItem = NSMenuItem(title: "全てリセット", action: #selector(resetAll), keyEquivalent: "")
-        resetAllItem.target = self
-        menu.addItem(resetAllItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let alwaysOnTopItem = NSMenuItem(title: "常に手前に表示", action: #selector(toggleAlwaysOnTop), keyEquivalent: "")
-        alwaysOnTopItem.target = self
-        menu.addItem(alwaysOnTopItem)
-
-        let clickThroughItem = NSMenuItem(title: "クリック透過", action: #selector(toggleClickThrough), keyEquivalent: "")
-        clickThroughItem.target = self
-        menu.addItem(clickThroughItem)
-
-        let resetOpacityItem = NSMenuItem(title: "不透明度をリセット", action: #selector(resetOpacity), keyEquivalent: "")
-        resetOpacityItem.target = self
-        menu.addItem(resetOpacityItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let showWindowItem = NSMenuItem(title: "ウィンドウを表示", action: #selector(showMainWindow), keyEquivalent: "")
-        showWindowItem.target = self
-        menu.addItem(showWindowItem)
-
-        let quitItem = NSMenuItem(title: "終了", action: #selector(quitApplication), keyEquivalent: "")
-        quitItem.target = self
-        menu.addItem(quitItem)
-
-        statusBarItem?.menu = menu
-    }
-
     @objc private func toggleAlwaysOnTop() {
         let currentLevel = window.level
         let isCurrentlyOnTop = currentLevel == .floating
@@ -110,11 +124,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         controlPanelController?.updateAlwaysOnTopState(!isCurrentlyOnTop)
     }
 
-    // メニューバーの常に手前表示の状態を更新
-    func updateAlwaysOnTopMenuState(_ isEnabled: Bool) {
-        if let menu = statusBarItem?.menu,
-           let alwaysOnTopItem = menu.item(at: 2) { // インデックスを2に変更（全てリセット、区切り線の後）
-            alwaysOnTopItem.title = "常に手前に表示"
+    // メインメニューの常に手前表示の状態を更新
+    private func updateAlwaysOnTopMenuState(_ isEnabled: Bool) {
+        if let mainMenu = NSApplication.shared.mainMenu,
+           let viewMenu = mainMenu.item(at: 1)?.submenu,
+           let alwaysOnTopItem = viewMenu.item(at: 2) {
             alwaysOnTopItem.state = isEnabled ? .on : .off
         }
     }
@@ -128,11 +142,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         controlPanelController?.updateClickThroughState(!isCurrentlyClickThrough)
     }
 
-    // メニューバーのクリック透過の状態を更新
-    func updateClickThroughMenuState(_ isEnabled: Bool) {
-        if let menu = statusBarItem?.menu,
-           let clickThroughItem = menu.item(at: 3) { // インデックスを3に変更（全てリセット、区切り線、常に手前の後）
-            clickThroughItem.title = "クリック透過"
+    // メインメニューのクリック透過の状態を更新
+    private func updateClickThroughMenuState(_ isEnabled: Bool) {
+        if let mainMenu = NSApplication.shared.mainMenu,
+           let viewMenu = mainMenu.item(at: 1)?.submenu,
+           let clickThroughItem = viewMenu.item(at: 3) {
             clickThroughItem.state = isEnabled ? .on : .off
         }
     }
