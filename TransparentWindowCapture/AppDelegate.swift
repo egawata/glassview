@@ -15,17 +15,21 @@ limitations under the License.
 */
 
 import AppKit
+import ScreenCaptureKit
 
 // MARK: - App Delegate
 @available(macOS 12.3, *)
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
     var window: NSWindow!
+    var controlPanelWindow: NSWindow!
     private var statusBarItem: NSStatusItem?
     private var viewController: ViewController?
+    private var controlPanelController: ControlPanelViewController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusBarItem()
         setupWindow()
+        setupControlPanelWindow()
         updateAllMenuStates()
     }
 
@@ -128,31 +132,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showMainWindow() {
         window.makeKeyAndOrderFront(nil)
+        controlPanelWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func resetOpacity() {
-        viewController?.resetOpacity()
+        viewController?.updateWindowTransparency(1.0)
+        controlPanelController?.updateTransparencyValue(1.0)
     }
 
     @objc private func resetAll() {
         viewController?.resetAllToInitialState()
+        controlPanelController?.updateTransparencyValue(1.0)
+        controlPanelController?.updateClickThroughState(false)
+        controlPanelController?.updateAlwaysOnTopState(false)
 
         // 常に手前表示を無効化
         window.level = .normal
         updateAlwaysOnTopMenuState(false)
-        viewController?.updateAlwaysOnTopState(false)
 
         // クリック透過を無効化
         (window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(false)
         updateClickThroughMenuState(false)
-        viewController?.updateClickThroughState(false)
-
-        // 不透明度を100%にリセット
-        viewController?.resetOpacity()
 
         // ウィンドウをアクティブにして最前面に表示
         window.makeKeyAndOrderFront(nil)
+        controlPanelWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -181,7 +186,81 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    private func setupControlPanelWindow() {
+        let contentRect = NSRect(x: 0, y: 0, width: 800, height: 180)
+
+        controlPanelWindow = NSWindow(
+            contentRect: contentRect,
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+
+        controlPanelWindow.title = "GlassView Control Panel"
+
+        // メインウィンドウの右側に配置
+        let mainWindowFrame = window.frame
+        let controlPanelFrame = NSRect(
+            x: mainWindowFrame.maxX + 20,
+            y: mainWindowFrame.maxY - 180,
+            width: 800,
+            height: 180
+        )
+        controlPanelWindow.setFrame(controlPanelFrame, display: true)
+
+        let controlPanelController = ControlPanelViewController()
+        controlPanelController.delegate = self
+        controlPanelWindow.contentViewController = controlPanelController
+        self.controlPanelController = controlPanelController
+
+        controlPanelWindow.makeKeyAndOrderFront(nil)
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
+    }
+}
+
+// MARK: - ControlPanelDelegate Implementation
+@available(macOS 12.3, *)
+extension AppDelegate {
+    func controlPanelDidStartCapture(_ panel: ControlPanelViewController) {
+        // 廃止予定
+    }
+
+    func controlPanelDidStopCapture(_ panel: ControlPanelViewController) {
+        // 廃止予定
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didStartCapture window: SCWindow, frameRate: Double) {
+        viewController?.startCapture(for: window, frameRate: frameRate)
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didStopCapture: Void) {
+        viewController?.stopCapture()
+    }
+
+    func controlPanelDidRefreshWindowList(_ panel: ControlPanelViewController) {
+        // 必要に応じて追加の処理
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didChangeTransparency alpha: Double) {
+        viewController?.updateWindowTransparency(alpha)
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didChangeFrameRate frameRate: Double) {
+        viewController?.updateFrameRate(frameRate)
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didToggleClickThrough enabled: Bool) {
+        (window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(enabled)
+        viewController?.updateClickThroughState(enabled)
+        updateClickThroughMenuState(enabled)
+    }
+
+    func controlPanel(_ panel: ControlPanelViewController, didToggleAlwaysOnTop enabled: Bool) {
+        window.level = enabled ? .floating : .normal
+        viewController?.updateAlwaysOnTopState(enabled)
+        updateAlwaysOnTopMenuState(enabled)
     }
 }
