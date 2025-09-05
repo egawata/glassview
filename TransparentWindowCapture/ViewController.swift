@@ -43,9 +43,46 @@ class ViewController: NSViewController {
         super.viewDidLoad()
         setupWindowTransparency()
         setupWindowCaptureManager()
+        setupKeyboardShortcuts()
 
         // ウィンドウリサイズの監視を設定
         setupWindowResizeObserver()
+    }
+
+    // MARK: - Keyboard Shortcuts Setup
+    private func setupKeyboardShortcuts() {
+        // キーイベントを受け取るためにfirst responderを設定
+        view.window?.makeFirstResponder(self)
+
+        // キーボードイベントの監視を設定
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            return self?.handleKeyDown(event) ?? event
+        }
+    }
+
+    private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+        let modifierFlags = event.modifierFlags
+        let keyCode = event.keyCode
+
+        // Command + Plus (拡大)
+        if modifierFlags.contains(.command) && (keyCode == 24 || event.charactersIgnoringModifiers == "=") {
+            customImageView.zoomIn()
+            return nil // イベントを消費
+        }
+
+        // Command + Minus (縮小)
+        if modifierFlags.contains(.command) && (keyCode == 27 || event.charactersIgnoringModifiers == "-") {
+            customImageView.zoomOut()
+            return nil // イベントを消費
+        }
+
+        // Command + N (リセット)
+        if modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "n" {
+            customImageView.resetTransform()
+            return nil // イベントを消費
+        }
+
+        return event // その他のイベントはそのまま通す
     }
 
     override func viewDidLayout() {
@@ -263,6 +300,19 @@ class ViewController: NSViewController {
     deinit {
         // メモリリークを防ぐためにNotificationObserverを削除
         NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Transform Methods
+    func zoomIn() {
+        customImageView.zoomIn()
+    }
+
+    func zoomOut() {
+        customImageView.zoomOut()
+    }
+
+    func resetTransform() {
+        customImageView.resetTransform()
     }
 }
 

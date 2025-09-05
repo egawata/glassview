@@ -21,6 +21,33 @@ import AppKit
 class ClickThroughImageView: NSImageView {
     var isClickThroughEnabled = false
 
+    // Transform properties
+    private var currentScale: CGFloat = 1.0
+    private var minScale: CGFloat = 0.1
+    private var maxScale: CGFloat = 5.0
+    private var scaleStep: CGFloat = 0.1
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupTransformProperties()
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupTransformProperties()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupTransformProperties()
+    }
+
+    private func setupTransformProperties() {
+        // Enable layer-backed view for Core Animation transforms
+        wantsLayer = true
+        layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    }
+
     override func hitTest(_ point: NSPoint) -> NSView? {
         if isClickThroughEnabled {
             // クリック透過が有効な場合は、このビューではヒットテストを行わない
@@ -58,6 +85,44 @@ class ClickThroughImageView: NSImageView {
     func setClickThroughEnabled(_ enabled: Bool) {
         isClickThroughEnabled = enabled
         needsDisplay = true
+    }
+
+    // MARK: - Transform Methods
+    func zoomIn() {
+        let newScale = min(currentScale + scaleStep, maxScale)
+        setScale(newScale)
+    }
+
+    func zoomOut() {
+        let newScale = max(currentScale - scaleStep, minScale)
+        setScale(newScale)
+    }
+
+    func setScale(_ scale: CGFloat) {
+        currentScale = max(minScale, min(scale, maxScale))
+        applyTransform()
+    }
+
+    func resetTransform() {
+        currentScale = 1.0
+        applyTransform()
+    }
+
+    func getCurrentScale() -> CGFloat {
+        return currentScale
+    }
+
+    private func applyTransform() {
+        guard let layer = layer else { return }
+
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.2)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+
+        let transform = CATransform3DMakeScale(currentScale, currentScale, 1.0)
+        layer.transform = transform
+
+        CATransaction.commit()
     }
 }
 
