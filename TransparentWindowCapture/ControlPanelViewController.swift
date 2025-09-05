@@ -55,7 +55,7 @@ class ControlPanelViewController: NSViewController {
     private var isCapturing = false
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 180))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 120))
         setupUI()
     }
 
@@ -79,12 +79,12 @@ class ControlPanelViewController: NSViewController {
         view.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
 
         // Window selection popup (1st row)
-        windowListPopup = NSPopUpButton(frame: NSRect(x: 20, y: 140, width: 300, height: 25))
+        windowListPopup = NSPopUpButton(frame: NSRect(x: 20, y: 80, width: 300, height: 25))
         windowListPopup.addItem(withTitle: "ウィンドウを選択してください")
         view.addSubview(windowListPopup)
 
         // Start capture button
-        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 135, width: 120, height: 32))
+        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 75, width: 120, height: 32))
         startCaptureButton.title = "キャプチャ開始"
         startCaptureButton.bezelStyle = .rounded
         startCaptureButton.target = self
@@ -92,7 +92,7 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(startCaptureButton)
 
         // Refresh button
-        refreshButton = NSButton(frame: NSRect(x: 460, y: 135, width: 100, height: 32))
+        refreshButton = NSButton(frame: NSRect(x: 460, y: 75, width: 100, height: 32))
         refreshButton.title = "リスト更新"
         refreshButton.bezelStyle = .rounded
         refreshButton.target = self
@@ -100,14 +100,14 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(refreshButton)
 
         // Transparency label and slider (2nd row)
-        let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 111, width: 70, height: 16))
+        let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 51, width: 70, height: 16))
         transparencyLabel.stringValue = "不透明度:"
         transparencyLabel.isEditable = false
         transparencyLabel.isBordered = false
         transparencyLabel.backgroundColor = NSColor.clear
         view.addSubview(transparencyLabel)
 
-        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 107, width: 300, height: 25))
+        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 47, width: 300, height: 25))
         transparencySlider.minValue = 0.1
         transparencySlider.maxValue = 1.0
         transparencySlider.doubleValue = 1.0
@@ -116,14 +116,14 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(transparencySlider)
 
         // Frame rate label and controls (2nd row)
-        let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 111, width: 30, height: 16))
+        let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 51, width: 30, height: 16))
         frameRateLabel.stringValue = "fps:"
         frameRateLabel.isEditable = false
         frameRateLabel.isBordered = false
         frameRateLabel.backgroundColor = NSColor.clear
         view.addSubview(frameRateLabel)
 
-        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 107, width: 180, height: 25))
+        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 47, width: 180, height: 25))
         frameRateSlider.minValue = 1.0
         frameRateSlider.maxValue = 60.0
         frameRateSlider.doubleValue = currentFrameRate
@@ -131,7 +131,7 @@ class ControlPanelViewController: NSViewController {
         frameRateSlider.action = #selector(frameRateSliderChanged(_:))
         view.addSubview(frameRateSlider)
 
-        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 107, width: 50, height: 25))
+        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 47, width: 50, height: 25))
         frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
         frameRateTextField.isEditable = true
         frameRateTextField.target = self
@@ -139,14 +139,14 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(frameRateTextField)
 
         // Click-through and Always On Top buttons (3rd row)
-        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 75, width: 130, height: 32))
+        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 15, width: 130, height: 32))
         clickThroughButton.title = "クリック透過"
         clickThroughButton.bezelStyle = .rounded
         clickThroughButton.target = self
         clickThroughButton.action = #selector(clickThroughButtonClicked(_:))
         view.addSubview(clickThroughButton)
 
-        alwaysOnTopButton = NSButton(frame: NSRect(x: 160, y: 75, width: 120, height: 32))
+        alwaysOnTopButton = NSButton(frame: NSRect(x: 160, y: 15, width: 120, height: 32))
         alwaysOnTopButton.title = "常に手前表示"
         alwaysOnTopButton.bezelStyle = .rounded
         alwaysOnTopButton.target = self
@@ -154,35 +154,15 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(alwaysOnTopButton)
 
         // Status label (3rd row)
-        statusLabel = NSTextField(frame: NSRect(x: 290, y: 81, width: 480, height: 20))
+        statusLabel = NSTextField(frame: NSRect(x: 290, y: 21, width: 280, height: 20))
         statusLabel.isEditable = false
         statusLabel.isBordered = false
         statusLabel.backgroundColor = NSColor.clear
         statusLabel.font = NSFont.systemFont(ofSize: 12)
         view.addSubview(statusLabel)
 
-        // Info label (4th row)
-        let infoLabel = NSTextField(frame: NSRect(x: 20, y: 45, width: 760, height: 16))
-        infoLabel.stringValue = "※ このアプリにはスクリーン録画権限が必要です。"
-        infoLabel.isEditable = false
-        infoLabel.isBordered = false
-        infoLabel.backgroundColor = NSColor.clear
-        infoLabel.textColor = NSColor.secondaryLabelColor
-        infoLabel.font = NSFont.systemFont(ofSize: 11)
-        view.addSubview(infoLabel)
-
-        // Additional info label
-        let additionalInfoLabel = NSTextField(frame: NSRect(x: 20, y: 25, width: 760, height: 16))
-        additionalInfoLabel.stringValue = "システム設定 > プライバシーとセキュリティ > スクリーン録画 で許可してください。"
-        additionalInfoLabel.isEditable = false
-        additionalInfoLabel.isBordered = false
-        additionalInfoLabel.backgroundColor = NSColor.clear
-        additionalInfoLabel.textColor = NSColor.secondaryLabelColor
-        additionalInfoLabel.font = NSFont.systemFont(ofSize: 11)
-        view.addSubview(additionalInfoLabel)
-
         // Reset button
-        let resetButton = NSButton(frame: NSRect(x: 20, y: 5, width: 100, height: 25))
+        let resetButton = NSButton(frame: NSRect(x: 580, y: 15, width: 100, height: 32))
         resetButton.title = "全てリセット"
         resetButton.bezelStyle = .rounded
         resetButton.target = self
