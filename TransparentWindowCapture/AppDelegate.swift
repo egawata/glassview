@@ -224,14 +224,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
 // MARK: - ControlPanelDelegate Implementation
 @available(macOS 12.3, *)
 extension AppDelegate {
-    func controlPanelDidStartCapture(_ panel: ControlPanelViewController) {
-        // 廃止予定
-    }
-
-    func controlPanelDidStopCapture(_ panel: ControlPanelViewController) {
-        // 廃止予定
-    }
-
     func controlPanel(_ panel: ControlPanelViewController, didStartCapture window: SCWindow, frameRate: Double) {
         viewController?.startCapture(for: window, frameRate: frameRate)
     }

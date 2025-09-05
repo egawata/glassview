@@ -20,8 +20,6 @@ import ScreenCaptureKit
 // MARK: - Control Panel Delegate Protocol
 @available(macOS 12.3, *)
 protocol ControlPanelDelegate: AnyObject {
-    func controlPanelDidStartCapture(_ panel: ControlPanelViewController)
-    func controlPanelDidStopCapture(_ panel: ControlPanelViewController)
     func controlPanelDidRefreshWindowList(_ panel: ControlPanelViewController)
     func controlPanel(_ panel: ControlPanelViewController, didChangeTransparency alpha: Double)
     func controlPanel(_ panel: ControlPanelViewController, didChangeFrameRate frameRate: Double)
