@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - ViewController
 @available(macOS 12.3, *)
@@ -410,7 +411,8 @@ extension ViewController: WindowCaptureManagerDelegate {
 
     func didEncounterError(_ error: Error) {
         DispatchQueue.main.async {
-            print("キャプチャエラー: \(error)")
+            // エラーログは重要なので、リリースビルドでも出力
+            os_log(.error, "キャプチャエラー: %@", error.localizedDescription)
         }
     }
 }

@@ -51,32 +51,40 @@ class ClickThroughImageView: NSImageView {
         wantsLayer = true
         layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
-                // デバッグログ: セットアップ情報を記録
+        #if DEBUG
+        // デバッグログ: セットアップ情報を記録
         logger.debug("🎯 ClickThroughImageView setup completed")
         logger.debug("  - frame: \(String(describing: self.frame))")
         logger.debug("  - bounds: \(String(describing: self.bounds))")
         logger.debug("  - wantsLayer: \(self.wantsLayer)")
+        #endif
     }
 
     override var acceptsFirstResponder: Bool {
-        print("🎯 ClickThroughImageView acceptsFirstResponder called -> return \(!isClickThroughEnabled)")
+        #if DEBUG
+        logger.debug("🎯 ClickThroughImageView acceptsFirstResponder called -> return \(!self.isClickThroughEnabled)")
+        #endif
         return !isClickThroughEnabled
     }
 
     override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
+        #if DEBUG
         logger.debug("🎯 ClickThroughImageView becomeFirstResponder called -> return \(result)")
+        #endif
         return result
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         let result = isClickThroughEnabled ? nil : super.hitTest(point)
+        #if DEBUG
         logger.debug("🎯 ClickThroughImageView hitTest called")
         logger.debug("  - point: \(String(describing: point))")
         logger.debug("  - clickThrough enabled: \(self.isClickThroughEnabled)")
         logger.debug("  - result: \(result != nil ? "self" : "nil")")
         logger.debug("  - frame: \(String(describing: self.frame))")
         logger.debug("  - bounds: \(String(describing: self.bounds))")
+        #endif
         return result
     }
 
@@ -86,9 +94,11 @@ class ClickThroughImageView: NSImageView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        #if DEBUG
         // デバッグログ: mouseDownメソッドが呼ばれたことを記録
         logger.debug("🖱️ mouseDown called on ClickThroughImageView")
         logger.debug("  - clickThrough enabled: \(self.isClickThroughEnabled)")
+        #endif
 
         if !isClickThroughEnabled {
             super.mouseDown(with: event)
@@ -111,6 +121,7 @@ class ClickThroughImageView: NSImageView {
     }
 
     override func scrollWheel(with event: NSEvent) {
+        #if DEBUG
         // デバッグログ: scrollWheelメソッドが呼ばれたことを記録
         logger.debug("🖱️ ClickThroughImageView.scrollWheel called - THIS IS VERY IMPORTANT!")
         logger.debug("  - scrollingDeltaY: \(event.scrollingDeltaY)")
@@ -119,10 +130,13 @@ class ClickThroughImageView: NSImageView {
         logger.debug("  - modifierFlags: \(String(describing: event.modifierFlags))")
         logger.debug("  - shift pressed: \(event.modifierFlags.contains(.shift))")
         logger.debug("  - clickThrough enabled: \(self.isClickThroughEnabled)")
+        #endif
 
         // Shiftキーが押されている場合のみ拡大縮小を行う
         if event.modifierFlags.contains(.shift) && !isClickThroughEnabled {
+            #if DEBUG
             logger.debug("  ✅ Shift+scroll zoom condition met!")
+            #endif
 
             // 複数のdelta値を試す（scrollingDeltaY、deltaY、deltaXの順）
             var deltaY = event.scrollingDeltaY
@@ -133,30 +147,42 @@ class ClickThroughImageView: NSImageView {
                 deltaY = event.deltaX
             }
 
+            #if DEBUG
             logger.debug("  - final deltaY used: \(deltaY)")
+            #endif
 
             // マウスホイールの向きに応じて拡大・縮小（小さなステップで）
             let wheelZoomStep: CGFloat = 0.02  // 通常の0.1の0.2倍
             if deltaY > 0.1 {
                 // 上にスクロール -> 拡大
+                #if DEBUG
                 logger.debug("  📈 Zooming IN (deltaY: \(deltaY), step: \(wheelZoomStep))")
+                #endif
                 zoomIn(step: wheelZoomStep)
             } else if deltaY < -0.1 {
                 // 下にスクロール -> 縮小
+                #if DEBUG
                 logger.debug("  📉 Zooming OUT (deltaY: \(deltaY), step: \(wheelZoomStep))")
+                #endif
                 zoomOut(step: wheelZoomStep)
             } else {
+                #if DEBUG
                 logger.debug("  ⚠️ No significant deltaY change (deltaY: \(deltaY))")
+                #endif
             }
 
             // イベントを消費して、他のビューに伝播しないようにする
             return
         } else {
-            print("  ❌ Shift+scroll zoom condition NOT met")
+            #if DEBUG
+            logger.debug("  ❌ Shift+scroll zoom condition NOT met")
+            #endif
         }
 
         // Shiftキーが押されていない場合は通常の処理
+        #if DEBUG
         logger.debug("  → Passing to super.scrollWheel")
+        #endif
         super.scrollWheel(with: event)
     }
 
@@ -169,21 +195,27 @@ class ClickThroughImageView: NSImageView {
     func zoomIn(step: CGFloat? = nil) {
         let stepToUse = step ?? scaleStep
         let newScale = min(currentScale + stepToUse, maxScale)
+        #if DEBUG
         logger.debug("🔍 zoomIn: \(self.currentScale) → \(newScale) (step: \(stepToUse))")
+        #endif
         setScale(newScale)
     }
 
     func zoomOut(step: CGFloat? = nil) {
         let stepToUse = step ?? scaleStep
         let newScale = max(currentScale - stepToUse, minScale)
+        #if DEBUG
         logger.debug("🔍 zoomOut: \(self.currentScale) → \(newScale) (step: \(stepToUse))")
+        #endif
         setScale(newScale)
     }
 
     func setScale(_ scale: CGFloat) {
         let oldScale = currentScale
         currentScale = max(minScale, min(scale, maxScale))
+        #if DEBUG
         logger.debug("📏 setScale: \(oldScale) → \(self.currentScale) (requested: \(scale))")
+        #endif
         applyTransform()
     }
 
@@ -215,6 +247,9 @@ class ClickThroughImageView: NSImageView {
 class ClickThroughWindow: NSWindow {
     var isGlobalClickThroughEnabled = false
 
+    // Logger for debug output
+    private let logger = Logger(subsystem: "com.example.GlassView", category: "Window")
+
     override var canBecomeKey: Bool {
         // クリック無視が有効な場合は、キーウィンドウにならない
         return !isGlobalClickThroughEnabled
@@ -226,12 +261,14 @@ class ClickThroughWindow: NSWindow {
     }
 
     override func sendEvent(_ event: NSEvent) {
+        #if DEBUG
         // デバッグログ: ウィンドウレベルでのイベントを記録
         if event.type == .scrollWheel {
-            print("🪟 ClickThroughWindow.sendEvent: scrollWheel event received")
-            print("  - globalClickThrough enabled: \(isGlobalClickThroughEnabled)")
-            print("  - event deltaY: \(event.scrollingDeltaY)")
+            logger.debug("🪟 ClickThroughWindow.sendEvent: scrollWheel event received")
+            logger.debug("  - globalClickThrough enabled: \(self.isGlobalClickThroughEnabled)")
+            logger.debug("  - event deltaY: \(event.scrollingDeltaY)")
         }
+        #endif
 
         if isGlobalClickThroughEnabled {
             // クリック無視が有効な場合は、イベントを処理しない

@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - Control Panel Delegate Protocol
 @available(macOS 12.3, *)
@@ -326,7 +327,8 @@ class ControlPanelViewController: NSViewController {
                     }
                 }
             } catch {
-                print("ウィンドウ一覧の取得に失敗: \(error)")
+                // エラーログは重要なので、リリースビルドでも出力
+                os_log(.error, "ウィンドウ一覧の取得に失敗: %@", error.localizedDescription)
                 DispatchQueue.main.async {
                     self.windowListPopup.addItem(withTitle: "ウィンドウ取得エラー")
                     self.startCaptureButton.isEnabled = false

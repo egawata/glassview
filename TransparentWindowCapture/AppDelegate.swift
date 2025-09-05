@@ -34,6 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
     }
 
     private func setupGlobalEventMonitoring() {
+        #if DEBUG
         // グローバルイベント監視を設定してデバッグ
         let logger = Logger(subsystem: "com.example.GlassView", category: "GlobalEvents")
 
@@ -43,6 +44,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         DispatchQueue.main.async {
             logger.debug("🌍 Global event monitoring ready")
         }
+        #endif
     }
 
     private func setupMainMenu() {
