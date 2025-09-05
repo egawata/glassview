@@ -180,29 +180,22 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(resetButton)
 
         // Transform controls (最下行)
-        let transformLabel = NSTextField(frame: NSRect(x: 20, y: 25, width: 50, height: 16))
-        transformLabel.stringValue = "変形:"
-        transformLabel.isEditable = false
-        transformLabel.isBordered = false
-        transformLabel.backgroundColor = NSColor.clear
-        view.addSubview(transformLabel)
-
-        zoomOutButton = NSButton(frame: NSRect(x: 75, y: 20, width: 40, height: 25))
+        zoomOutButton = NSButton(frame: NSRect(x: 20, y: 20, width: 60, height: 25))
         zoomOutButton.title = "🔍-"
         zoomOutButton.bezelStyle = .rounded
         zoomOutButton.target = self
         zoomOutButton.action = #selector(zoomOutClicked(_:))
         view.addSubview(zoomOutButton)
 
-        zoomInButton = NSButton(frame: NSRect(x: 120, y: 20, width: 40, height: 25))
+        zoomInButton = NSButton(frame: NSRect(x: 65, y: 20, width: 60, height: 25))
         zoomInButton.title = "🔍+"
         zoomInButton.bezelStyle = .rounded
         zoomInButton.target = self
         zoomInButton.action = #selector(zoomInClicked(_:))
         view.addSubview(zoomInButton)
 
-        resetTransformButton = NSButton(frame: NSRect(x: 170, y: 20, width: 80, height: 25))
-        resetTransformButton.title = "↺リセット"
+        resetTransformButton = NSButton(frame: NSRect(x: 115, y: 20, width: 80, height: 25))
+        resetTransformButton.title = "↺"
         resetTransformButton.bezelStyle = .rounded
         resetTransformButton.target = self
         resetTransformButton.action = #selector(resetTransformClicked(_:))
