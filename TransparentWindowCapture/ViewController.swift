@@ -264,6 +264,9 @@ class ViewController: NSViewController {
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
 
+        // 現在の拡大倍率を保存
+        let currentScale = customImageView.getCurrentScale()
+
         // キャプチャエリアの新しいフレームを計算
         let newFrame = NSRect(
             x: margin,
@@ -274,6 +277,9 @@ class ViewController: NSViewController {
 
         // フレームを更新
         customImageView.frame = newFrame
+
+        // 拡大倍率を復元
+        customImageView.setScale(currentScale)
 
         // Update tips container position
         updateTipsContainerLayout()
