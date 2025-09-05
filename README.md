@@ -14,27 +14,7 @@ https://github.com/egawata/glassview/releases/tag/v0.1 から `.dmg` ファイ�
 
 ### ソースコードからビルド
 
-#### 方法 1: Swift Package Manager を使用（推奨）
-
-~~~sh
-# Swift Package Manager でビルド
-swift build -c release
-pkill -9 -f "TransparentWindowCapture\|GlassView" 2>/dev/null || true
-rm -rf GlassView.app
-cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app . 2>/dev/null || mkdir -p GlassView.app/Contents/{MacOS,Resources}
-cp .build/release/GlassView GlassView.app/Contents/MacOS/
-cp TransparentWindowCapture/Info.plist GlassView.app/Contents/
-codesign --force --sign - --entitlements TransparentWindowCapture/TransparentWindowCapture.entitlements GlassView.app
-~~~
-
-#### 方法 2: Xcode ビルドシステムを使用
-
-~~~sh
-xcodebuild -project TransparentWindowCapture.xcodeproj -scheme TransparentWindowCapture -configuration Release clean build
-tccutil reset ScreenCapture com.example.TransparentWindowCapture
-rm -rf GlassView.app
-cp -R /Users/$(whoami)/Library/Developer/Xcode/DerivedData/TransparentWindowCapture-*/Build/Products/Release/GlassView.app .
-~~~
+[開発者向け情報](#開発者向け情報)を参照してください。
 
 ### 権限設定
 
