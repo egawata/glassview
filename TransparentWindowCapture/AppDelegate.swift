@@ -228,7 +228,7 @@ extension AppDelegate {
         viewController?.startCapture(for: window, frameRate: frameRate)
     }
 
-    func controlPanel(_ panel: ControlPanelViewController, didStopCapture: Void) {
+    func controlPanelDidStopCapture(_ panel: ControlPanelViewController) {
         viewController?.stopCapture()
     }
 

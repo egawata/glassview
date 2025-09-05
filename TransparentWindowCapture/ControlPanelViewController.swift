@@ -26,7 +26,7 @@ protocol ControlPanelDelegate: AnyObject {
     func controlPanel(_ panel: ControlPanelViewController, didToggleClickThrough enabled: Bool)
     func controlPanel(_ panel: ControlPanelViewController, didToggleAlwaysOnTop enabled: Bool)
     func controlPanel(_ panel: ControlPanelViewController, didStartCapture window: SCWindow, frameRate: Double)
-    func controlPanel(_ panel: ControlPanelViewController, didStopCapture: Void)
+    func controlPanelDidStopCapture(_ panel: ControlPanelViewController)
 }
 
 // MARK: - Control Panel View Controller
@@ -205,7 +205,7 @@ class ControlPanelViewController: NSViewController {
             sender.title = "キャプチャ停止"
             windowListPopup.isEnabled = false
         } else {
-            delegate?.controlPanel(self, didStopCapture: ())
+            delegate?.controlPanelDidStopCapture(self)
 
             isCapturing = false
             sender.title = "キャプチャ開始"
