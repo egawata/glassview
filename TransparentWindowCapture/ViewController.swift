@@ -45,7 +45,7 @@ class ViewController: NSViewController {
     private var availableWindows: [SCWindow] = []
     private var isClickThroughEnabled = false
     private var isAlwaysOnTopEnabled = false
-    private var currentFrameRate: Double = 10.0 // 初期値を10fpsに設定
+    private var currentFrameRate: Double = 3.0  // initial fps
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -80,7 +80,7 @@ class ViewController: NSViewController {
         // Custom ImageView (click-through capable) - アスペクト比保持でリサイズ
         customImageView = ClickThroughImageView(frame: NSRect(x: 20, y: 120, width: 760, height: 420))
         customImageView.imageScaling = .scaleProportionallyUpOrDown // アスペクト比を保持してサイズ調整
-        customImageView.imageAlignment = .alignCenter // 中央配置
+        customImageView.imageAlignment = .alignCenter
         customImageView.wantsLayer = true
         customImageView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         view.addSubview(customImageView)
@@ -109,7 +109,7 @@ class ViewController: NSViewController {
         refreshButton.action = #selector(refreshWindowListClicked(_:))
         view.addSubview(refreshButton)
 
-        // Transparency label and slider (2nd row) - サイズを調整
+        // Transparency label and slider (2nd row)
         let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 61, width: 70, height: 16))
         transparencyLabel.stringValue = "不透明度:"
         transparencyLabel.isEditable = false
@@ -117,7 +117,7 @@ class ViewController: NSViewController {
         transparencyLabel.backgroundColor = NSColor.clear
         view.addSubview(transparencyLabel)
 
-        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 57, width: 300, height: 25)) // 幅を300に短縮
+        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 57, width: 300, height: 25))
         transparencySlider.minValue = 0.1
         transparencySlider.maxValue = 1.0
         transparencySlider.doubleValue = 1.0
@@ -125,7 +125,7 @@ class ViewController: NSViewController {
         transparencySlider.action = #selector(transparencySliderChanged(_:))
         view.addSubview(transparencySlider)
 
-        // Frame rate label and controls (2nd row) - 不透明度の右側に配置
+        // Frame rate label and controls (2nd row)
         let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 61, width: 30, height: 16))
         frameRateLabel.stringValue = "fps:"
         frameRateLabel.isEditable = false
@@ -182,15 +182,14 @@ class ViewController: NSViewController {
         infoLabel.font = NSFont.systemFont(ofSize: 11)
         view.addSubview(infoLabel)
 
-        // Register all UI controls to the registry for observer pattern
         registerUIControls()
     }
 
     // MARK: - Tips Display Setup
     private func setupTipsDisplay() {
-        // Tips container view (centered in capture area) - サイズを調整
-        let containerWidth: CGFloat = 700  // 幅を拡大
-        let containerHeight: CGFloat = 350  // 高さを拡大
+        // Tips container view (centered in capture area)
+        let containerWidth: CGFloat = 700
+        let containerHeight: CGFloat = 350
         let containerX = customImageView.frame.midX - (containerWidth / 2)
         let containerY = customImageView.frame.midY - (containerHeight / 2)
 
@@ -198,8 +197,8 @@ class ViewController: NSViewController {
         tipsContainerView.wantsLayer = true
         tipsContainerView.layer?.backgroundColor = NSColor.clear.cgColor
 
-        // Tips label - レイアウトを調整
-        tipsLabel = NSTextField(frame: NSRect(x: 50, y: 220, width: 600, height: 90))  // y位置を上に、高さを拡大
+        // Tips label
+        tipsLabel = NSTextField(frame: NSRect(x: 50, y: 220, width: 600, height: 90))
         tipsLabel.stringValue = "Tips:\n画面操作に困ったらデスクトップ上部メニューバーの\n「全てリセット」を選択してください"
         tipsLabel.isEditable = false
         tipsLabel.isBordered = false
@@ -207,18 +206,17 @@ class ViewController: NSViewController {
         tipsLabel.textColor = NSColor.secondaryLabelColor
         tipsLabel.font = NSFont.systemFont(ofSize: 16)
         tipsLabel.alignment = .center
-        tipsLabel.maximumNumberOfLines = 3  // 行数を3行に拡張
+        tipsLabel.maximumNumberOfLines = 3
         tipsLabel.cell?.wraps = true
         tipsLabel.cell?.isScrollable = false
 
-        // Tips image view - 位置を調整
-        tipsImageView = NSImageView(frame: NSRect(x: 200, y: 40, width: 300, height: 140))  // x位置を中央寄りに
+        // Tips image view
+        tipsImageView = NSImageView(frame: NSRect(x: 200, y: 40, width: 300, height: 140))
         if let tipsImage = NSImage(named: "TipsResetImage") {
             tipsImageView.image = tipsImage
         } else if let tipsImage = loadTipsImageFromBundle() {
             tipsImageView.image = tipsImage
         } else {
-            // フォールバック：システムアイコンを使用
             tipsImageView.image = NSImage(systemSymbolName: "arrow.clockwise.circle", accessibilityDescription: "Reset")
         }
         tipsImageView.imageScaling = .scaleProportionallyUpOrDown
@@ -240,7 +238,7 @@ class ViewController: NSViewController {
             return image
         }
 
-        // 開発環境でのフォールバック（限定的）
+        // fallback for dev env
         if let image = NSImage(contentsOfFile: "images/tips_reset.png") {
             return image
         }
@@ -264,7 +262,6 @@ class ViewController: NSViewController {
         }
     }
 
-    // Public methods for AppDelegate access
     func showTips() {
         showTipsDisplay()
     }
@@ -297,7 +294,7 @@ class ViewController: NSViewController {
         uiControlRegistry.register(transparencySlider)
         uiControlRegistry.register(frameRateSlider)
         uiControlRegistry.register(frameRateTextField)
-        uiControlRegistry.register(clickThroughButton)  // クリック透過ボタンも登録
+        uiControlRegistry.register(clickThroughButton)
     }
 
     // MARK: - Dynamic UI Control Management
@@ -310,7 +307,6 @@ class ViewController: NSViewController {
         updateButtonStatesForClickThrough()
     }
 
-    /// コントロールを削除してRegistryからも登録解除する
     func removeUIControl(_ control: NSControl) {
         uiControlRegistry.unregister(control)
         control.removeFromSuperview()
@@ -347,7 +343,6 @@ class ViewController: NSViewController {
             windowListPopup.isEnabled = !isClickThroughEnabled // 全体クリック透過状態を考慮
         }
 
-        // ボタンの状態を更新
         updateButtonStatesForClickThrough()
     }
 
@@ -362,7 +357,7 @@ class ViewController: NSViewController {
     @objc private func frameRateSliderChanged(_ sender: NSSlider) {
         currentFrameRate = sender.doubleValue
         frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
-        
+
         // キャプチャ中の場合、新しいフレームレートで再開
         if startCaptureButton.title == "キャプチャ停止" {
             windowCaptureManager?.updateFrameRate(currentFrameRate)
@@ -375,7 +370,7 @@ class ViewController: NSViewController {
             currentFrameRate = clampedValue
             frameRateSlider.doubleValue = clampedValue
             frameRateTextField.stringValue = String(format: "%.0f", clampedValue)
-            
+
             // キャプチャ中の場合、新しいフレームレートで再開
             if startCaptureButton.title == "キャプチャ停止" {
                 windowCaptureManager?.updateFrameRate(currentFrameRate)
@@ -388,7 +383,6 @@ class ViewController: NSViewController {
 
     // MARK: - Opacity Reset Methods
     func resetOpacity() {
-        // 不透明度を100%（1.0）にリセット
         transparencySlider.doubleValue = 1.0
         updateWindowTransparency()
     }
@@ -397,10 +391,8 @@ class ViewController: NSViewController {
     private func toggleAlwaysOnTop() {
         isAlwaysOnTopEnabled.toggle()
 
-        // ウィンドウレベルを更新
         view.window?.level = isAlwaysOnTopEnabled ? .floating : .normal
 
-        // AppDelegateのメニュー状態も更新
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.updateAlwaysOnTopMenuState(isAlwaysOnTopEnabled)
         }
@@ -419,11 +411,9 @@ class ViewController: NSViewController {
     private func toggleClickThrough() {
         isClickThroughEnabled.toggle()
 
-        // カスタムウィンドウのクリック透過設定を使用
         (view.window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(isClickThroughEnabled)
         customImageView?.setClickThroughEnabled(false)
 
-        // AppDelegateのメニュー状態も更新
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.updateClickThroughMenuState(isClickThroughEnabled)
         }
@@ -443,17 +433,16 @@ class ViewController: NSViewController {
         clickThroughButton?.title = isClickThroughEnabled ? "✓ クリック透過" : "クリック透過"
         alwaysOnTopButton?.title = isAlwaysOnTopEnabled ? "✓ 常に手前表示" : "常に手前表示"
 
-        // クリック透過が有効な場合、他のボタンを無効化してUIの分かりやすさを向上
+        // クリック透過が有効な場合、ボタン類を無効化
         updateButtonStatesForClickThrough()
     }
 
     private func updateButtonStatesForClickThrough() {
         if isClickThroughEnabled {
-            // 全体クリック透過が有効な場合、すべてのコントロールを無効化
-            // クリック透過ボタン自体も無効にする（どうせ押せないため）
+            // クリック透過が有効な場合、すべてのコントロールを無効化
             uiControlRegistry.setAllControlsEnabled(false)
         } else {
-            // 全体クリック透過が無効な場合、すべてのコントロールを有効化
+            // クリック透過が無効な場合、すべてのコントロールを有効化
             uiControlRegistry.setAllControlsEnabled(true)
 
             // ただし、キャプチャ中はウィンドウ選択ポップアップを無効にする
@@ -491,7 +480,6 @@ class ViewController: NSViewController {
     }
 
     private func setupWindowTransparency() {
-        // ウィンドウの透明度を有効にする
         view.window?.isOpaque = false
         view.window?.backgroundColor = NSColor.clear
         view.wantsLayer = true
@@ -509,11 +497,10 @@ class ViewController: NSViewController {
                 let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
 
                 DispatchQueue.main.async {
-                    // リストをクリア
                     self.windowListPopup.removeAllItems()
                     self.availableWindows = []
 
-                    // フィルタリング：実際のアプリケーションウィンドウのみ
+                    // filter：実際のアプリケーションウィンドウのみ
                     let filteredWindows = content.windows.filter { window in
                         return window.title?.isEmpty == false &&
                                window.owningApplication?.bundleIdentifier != Bundle.main.bundleIdentifier &&

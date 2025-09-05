@@ -67,18 +67,18 @@ class ClickThroughWindow: NSWindow {
     var isGlobalClickThroughEnabled = false
 
     override var canBecomeKey: Bool {
-        // 全体クリック無視が有効な場合は、キーウィンドウにならない
+        // クリック無視が有効な場合は、キーウィンドウにならない
         return !isGlobalClickThroughEnabled
     }
 
     override var canBecomeMain: Bool {
-        // 全体クリック無視が有効な場合は、メインウィンドウにならない
+        // クリック無視が有効な場合は、メインウィンドウにならない
         return !isGlobalClickThroughEnabled
     }
 
     override func sendEvent(_ event: NSEvent) {
         if isGlobalClickThroughEnabled {
-            // 全体クリック無視が有効な場合は、イベントを処理しない
+            // クリック無視が有効な場合は、イベントを処理しない
             // ただし、右クリックメニューは許可する
             if event.type == .rightMouseDown || event.type == .rightMouseUp {
                 super.sendEvent(event)

@@ -51,10 +51,10 @@ class WindowCaptureManager: NSObject, @unchecked Sendable {
 
     func updateFrameRate(_ frameRate: Double) {
         guard selectedWindow != nil else { return }
-        
+
         // 現在のキャプチャを停止
         captureTimer?.invalidate()
-        
+
         // 新しいフレームレートでキャプチャを再開
         let interval = 1.0 / frameRate
         captureTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in

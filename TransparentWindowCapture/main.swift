@@ -19,16 +19,13 @@ import AppKit
 // MARK: - Main Entry Point
 @available(macOS 12.3, *)
 func main() {
-    // NSApplicationを初期化
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate
 
-    // アプリケーションを実行
     app.run()
 }
 
-// メイン関数を実行
 if #available(macOS 12.3, *) {
     main()
 } else {
