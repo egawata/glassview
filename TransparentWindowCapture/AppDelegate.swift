@@ -40,6 +40,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
 
         updateAlwaysOnTopMenuState(isAlwaysOnTop)
         updateClickThroughMenuState(isClickThrough)
+
+        // コントロールパネルの状態も同期
+        controlPanelController?.updateAlwaysOnTopState(isAlwaysOnTop)
+        controlPanelController?.updateClickThroughState(isClickThrough)
     }
 
     private func setupStatusBarItem() {
@@ -103,6 +107,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         window.level = isCurrentlyOnTop ? .normal : .floating
         updateAlwaysOnTopMenuState(!isCurrentlyOnTop)
         viewController?.updateAlwaysOnTopState(!isCurrentlyOnTop)
+        controlPanelController?.updateAlwaysOnTopState(!isCurrentlyOnTop)
     }
 
     // メニューバーの常に手前表示の状態を更新
@@ -120,6 +125,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         (window as? ClickThroughWindow)?.setGlobalClickThroughEnabled(!isCurrentlyClickThrough)
         updateClickThroughMenuState(!isCurrentlyClickThrough)
         viewController?.updateClickThroughState(!isCurrentlyClickThrough)
+        controlPanelController?.updateClickThroughState(!isCurrentlyClickThrough)
     }
 
     // メニューバーのクリック透過の状態を更新
