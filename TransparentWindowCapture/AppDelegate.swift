@@ -89,7 +89,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         showWindowItem.target = self
         menu.addItem(showWindowItem)
 
-        let quitItem = NSMenuItem(title: "終了", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "終了", action: #selector(quitApplication), keyEquivalent: "")
+        quitItem.target = self
         menu.addItem(quitItem)
 
         statusBarItem?.menu = menu
@@ -134,6 +135,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         window.makeKeyAndOrderFront(nil)
         controlPanelWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func quitApplication() {
+        NSApplication.shared.terminate(nil)
     }
 
     @objc private func resetOpacity() {
