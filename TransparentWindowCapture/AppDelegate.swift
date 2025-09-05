@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - App Delegate
 @available(macOS 12.3, *)
@@ -29,6 +30,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         setupWindow()
         setupControlPanelWindow()
         setupMainMenu()
+        setupGlobalEventMonitoring()
+    }
+
+    private func setupGlobalEventMonitoring() {
+        // グローバルイベント監視を設定してデバッグ
+        let logger = Logger(subsystem: "com.example.GlassView", category: "GlobalEvents")
+
+        logger.debug("🌍 Global event monitoring setup started")
+
+        // 簡単なログ出力でテスト
+        DispatchQueue.main.async {
+            logger.debug("🌍 Global event monitoring ready")
+        }
     }
 
     private func setupMainMenu() {
