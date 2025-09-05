@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - Control Panel Delegate Protocol
 @available(macOS 12.3, *)
@@ -27,6 +28,11 @@ protocol ControlPanelDelegate: AnyObject {
     func controlPanel(_ panel: ControlPanelViewController, didToggleAlwaysOnTop enabled: Bool)
     func controlPanel(_ panel: ControlPanelViewController, didStartCapture window: SCWindow, frameRate: Double)
     func controlPanelDidStopCapture(_ panel: ControlPanelViewController)
+
+    // Transform controls
+    func controlPanelDidZoomIn(_ panel: ControlPanelViewController)
+    func controlPanelDidZoomOut(_ panel: ControlPanelViewController)
+    func controlPanelDidResetTransform(_ panel: ControlPanelViewController)
 }
 
 // MARK: - Control Panel View Controller
@@ -47,6 +53,11 @@ class ControlPanelViewController: NSViewController {
     private var alwaysOnTopButton: NSButton!
     private var statusLabel: NSTextField!
 
+    // Transform control UI components
+    private var zoomInButton: NSButton!
+    private var zoomOutButton: NSButton!
+    private var resetTransformButton: NSButton!
+
     // MARK: - Properties
     private var availableWindows: [SCWindow] = []
     private var isClickThroughEnabled = false
@@ -55,7 +66,7 @@ class ControlPanelViewController: NSViewController {
     private var isCapturing = false
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 120))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 160)) // 高さを120から160に変更
         setupUI()
     }
 
@@ -78,13 +89,13 @@ class ControlPanelViewController: NSViewController {
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
 
-        // Window selection popup (1st row)
-        windowListPopup = NSPopUpButton(frame: NSRect(x: 20, y: 80, width: 300, height: 25))
+        // Window selection popup (1st row) - Y座標を上に調整
+        windowListPopup = NSPopUpButton(frame: NSRect(x: 20, y: 120, width: 300, height: 25))
         windowListPopup.addItem(withTitle: "ウィンドウを選択してください")
         view.addSubview(windowListPopup)
 
         // Start capture button
-        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 75, width: 120, height: 32))
+        startCaptureButton = NSButton(frame: NSRect(x: 330, y: 115, width: 120, height: 32))
         startCaptureButton.title = "キャプチャ開始"
         startCaptureButton.bezelStyle = .rounded
         startCaptureButton.target = self
@@ -92,22 +103,22 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(startCaptureButton)
 
         // Refresh button
-        refreshButton = NSButton(frame: NSRect(x: 460, y: 75, width: 100, height: 32))
+        refreshButton = NSButton(frame: NSRect(x: 460, y: 115, width: 100, height: 32))
         refreshButton.title = "リスト更新"
         refreshButton.bezelStyle = .rounded
         refreshButton.target = self
         refreshButton.action = #selector(refreshWindowListClicked(_:))
         view.addSubview(refreshButton)
 
-        // Transparency label and slider (2nd row)
-        let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 51, width: 70, height: 16))
+        // Transparency label and slider (2nd row) - Y座標を上に調整
+        let transparencyLabel = NSTextField(frame: NSRect(x: 20, y: 91, width: 70, height: 16))
         transparencyLabel.stringValue = "不透明度:"
         transparencyLabel.isEditable = false
         transparencyLabel.isBordered = false
         transparencyLabel.backgroundColor = NSColor.clear
         view.addSubview(transparencyLabel)
 
-        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 47, width: 300, height: 25))
+        transparencySlider = NSSlider(frame: NSRect(x: 95, y: 87, width: 300, height: 25))
         transparencySlider.minValue = 0.1
         transparencySlider.maxValue = 1.0
         transparencySlider.doubleValue = 1.0
@@ -115,15 +126,15 @@ class ControlPanelViewController: NSViewController {
         transparencySlider.action = #selector(transparencySliderChanged(_:))
         view.addSubview(transparencySlider)
 
-        // Frame rate label and controls (2nd row)
-        let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 51, width: 30, height: 16))
+        // Frame rate label and controls (2nd row) - Y座標を上に調整
+        let frameRateLabel = NSTextField(frame: NSRect(x: 410, y: 91, width: 30, height: 16))
         frameRateLabel.stringValue = "fps:"
         frameRateLabel.isEditable = false
         frameRateLabel.isBordered = false
         frameRateLabel.backgroundColor = NSColor.clear
         view.addSubview(frameRateLabel)
 
-        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 47, width: 180, height: 25))
+        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 87, width: 180, height: 25))
         frameRateSlider.minValue = 1.0
         frameRateSlider.maxValue = 60.0
         frameRateSlider.doubleValue = currentFrameRate
@@ -131,22 +142,22 @@ class ControlPanelViewController: NSViewController {
         frameRateSlider.action = #selector(frameRateSliderChanged(_:))
         view.addSubview(frameRateSlider)
 
-        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 47, width: 50, height: 25))
+        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 87, width: 50, height: 25))
         frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
         frameRateTextField.isEditable = true
         frameRateTextField.target = self
         frameRateTextField.action = #selector(frameRateTextFieldChanged(_:))
         view.addSubview(frameRateTextField)
 
-        // Click-through and Always On Top buttons (3rd row)
-        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 15, width: 130, height: 32))
+        // Click-through and Always On Top buttons (3rd row) - 少し上に調整
+        clickThroughButton = NSButton(frame: NSRect(x: 20, y: 55, width: 130, height: 32))
         clickThroughButton.title = "クリック透過"
         clickThroughButton.bezelStyle = .rounded
         clickThroughButton.target = self
         clickThroughButton.action = #selector(clickThroughButtonClicked(_:))
         view.addSubview(clickThroughButton)
 
-        alwaysOnTopButton = NSButton(frame: NSRect(x: 160, y: 15, width: 120, height: 32))
+        alwaysOnTopButton = NSButton(frame: NSRect(x: 160, y: 55, width: 120, height: 32))
         alwaysOnTopButton.title = "常に手前表示"
         alwaysOnTopButton.bezelStyle = .rounded
         alwaysOnTopButton.target = self
@@ -154,7 +165,7 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(alwaysOnTopButton)
 
         // Status label (3rd row)
-        statusLabel = NSTextField(frame: NSRect(x: 290, y: 21, width: 280, height: 20))
+        statusLabel = NSTextField(frame: NSRect(x: 290, y: 61, width: 280, height: 20))
         statusLabel.isEditable = false
         statusLabel.isBordered = false
         statusLabel.backgroundColor = NSColor.clear
@@ -162,12 +173,34 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(statusLabel)
 
         // Reset button
-        let resetButton = NSButton(frame: NSRect(x: 580, y: 15, width: 100, height: 32))
+        let resetButton = NSButton(frame: NSRect(x: 580, y: 55, width: 100, height: 32))
         resetButton.title = "全てリセット"
         resetButton.bezelStyle = .rounded
         resetButton.target = self
         resetButton.action = #selector(resetAllClicked(_:))
         view.addSubview(resetButton)
+
+        // Transform controls (最下行)
+        zoomOutButton = NSButton(frame: NSRect(x: 20, y: 20, width: 60, height: 25))
+        zoomOutButton.title = "🔍-"
+        zoomOutButton.bezelStyle = .rounded
+        zoomOutButton.target = self
+        zoomOutButton.action = #selector(zoomOutClicked(_:))
+        view.addSubview(zoomOutButton)
+
+        zoomInButton = NSButton(frame: NSRect(x: 65, y: 20, width: 60, height: 25))
+        zoomInButton.title = "🔍*"
+        zoomInButton.bezelStyle = .rounded
+        zoomInButton.target = self
+        zoomInButton.action = #selector(zoomInClicked(_:))
+        view.addSubview(zoomInButton)
+
+        resetTransformButton = NSButton(frame: NSRect(x: 115, y: 20, width: 80, height: 25))
+        resetTransformButton.title = "↺"
+        resetTransformButton.bezelStyle = .rounded
+        resetTransformButton.target = self
+        resetTransformButton.action = #selector(resetTransformClicked(_:))
+        view.addSubview(resetTransformButton)
     }
 
     // MARK: - Action Methods
@@ -294,7 +327,8 @@ class ControlPanelViewController: NSViewController {
                     }
                 }
             } catch {
-                print("ウィンドウ一覧の取得に失敗: \(error)")
+                // エラーログは重要なので、リリースビルドでも出力
+                os_log(.error, "ウィンドウ一覧の取得に失敗: %@", error.localizedDescription)
                 DispatchQueue.main.async {
                     self.windowListPopup.addItem(withTitle: "ウィンドウ取得エラー")
                     self.startCaptureButton.isEnabled = false
@@ -362,5 +396,21 @@ class ControlPanelViewController: NSViewController {
 
         updateButtonTitles()
         updateStatusLabel()
+    }
+}
+
+// MARK: - Transform Action Methods
+@available(macOS 12.3, *)
+extension ControlPanelViewController {
+    @objc private func zoomInClicked(_ sender: NSButton) {
+        delegate?.controlPanelDidZoomIn(self)
+    }
+
+    @objc private func zoomOutClicked(_ sender: NSButton) {
+        delegate?.controlPanelDidZoomOut(self)
+    }
+
+    @objc private func resetTransformClicked(_ sender: NSButton) {
+        delegate?.controlPanelDidResetTransform(self)
     }
 }

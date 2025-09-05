@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - ViewController
 @available(macOS 12.3, *)
@@ -43,9 +44,120 @@ class ViewController: NSViewController {
         super.viewDidLoad()
         setupWindowTransparency()
         setupWindowCaptureManager()
+        setupKeyboardShortcuts()
 
         // ウィンドウリサイズの監視を設定
         setupWindowResizeObserver()
+    }
+
+    // MARK: - Keyboard Shortcuts Setup
+    private func setupKeyboardShortcuts() {
+        // メニューベースのキーボードショートカットを設定
+        setupMenuShortcuts()
+
+        // 代替として、より確実なイベント監視も設定
+        setupEventMonitor()
+    }
+
+    private func setupMenuShortcuts() {
+        guard let window = view.window else { return }
+
+        // ウィンドウ用の隠しメニューを作成
+        let menu = NSMenu()
+
+        // 拡大
+        let zoomInItem = NSMenuItem(title: "Zoom In", action: #selector(menuZoomIn), keyEquivalent: "+")
+        zoomInItem.target = self
+        zoomInItem.keyEquivalentModifierMask = .command
+        menu.addItem(zoomInItem)
+
+        // 縮小
+        let zoomOutItem = NSMenuItem(title: "Zoom Out", action: #selector(menuZoomOut), keyEquivalent: "-")
+        zoomOutItem.target = self
+        zoomOutItem.keyEquivalentModifierMask = .command
+        menu.addItem(zoomOutItem)
+
+        // リセット
+        let resetItem = NSMenuItem(title: "Reset Zoom", action: #selector(menuResetZoom), keyEquivalent: "n")
+        resetItem.target = self
+        resetItem.keyEquivalentModifierMask = .command
+        menu.addItem(resetItem)
+
+        // ウィンドウにメニューを関連付け（見えないメニュー）
+        window.menu = menu
+    }
+
+    private func setupEventMonitor() {
+        // より確実なキーイベント監視（バックアップ用）
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if self?.handleKeyDownEvent(event) == true {
+                return nil // イベントを消費
+            }
+            return event
+        }
+    }
+
+    private func handleKeyDownEvent(_ event: NSEvent) -> Bool {
+        let modifierFlags = event.modifierFlags
+
+        // Commandキーが押されているかチェック
+        guard modifierFlags.contains(.command) else { return false }
+
+        // 他の修飾キーは無視（ShiftやOptionなど）
+        let cleanModifiers = modifierFlags.intersection([.command])
+        guard cleanModifiers == .command else { return false }
+
+        switch event.charactersIgnoringModifiers?.lowercased() {
+        case "+", "=":
+            customImageView.zoomIn()
+            return true
+        case "-":
+            customImageView.zoomOut()
+            return true
+        case "n":
+            customImageView.resetTransform()
+            return true
+        default:
+            return false
+        }
+    }
+
+    // MARK: - Menu Actions
+    @objc private func menuZoomIn() {
+        customImageView.zoomIn()
+    }
+
+    @objc private func menuZoomOut() {
+        customImageView.zoomOut()
+    }
+
+    @objc private func menuResetZoom() {
+        customImageView.resetTransform()
+    }
+
+    private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+        let modifierFlags = event.modifierFlags
+        let keyCode = event.keyCode
+
+        // Command + Plus (拡大)
+        if modifierFlags.contains(.command) && (keyCode == 24 || event.charactersIgnoringModifiers == "=") {
+            customImageView.zoomIn()
+            return nil // イベントを消費
+        }
+
+        // Command + Minus (縮小)
+        if modifierFlags.contains(.command) && (keyCode == 27 || event.charactersIgnoringModifiers == "-") {
+            customImageView.zoomOut()
+            return nil // イベントを消費
+        }
+
+        // Command + N (リセット)
+        if modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "n" {
+            customImageView.resetTransform()
+            return nil // イベントを消費
+        }
+
+        return event // その他のイベントはそのまま通す
     }
 
     override func viewDidLayout() {
@@ -227,6 +339,9 @@ class ViewController: NSViewController {
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
 
+        // 現在の拡大倍率を保存
+        let currentScale = customImageView.getCurrentScale()
+
         // キャプチャエリアの新しいフレームを計算
         let newFrame = NSRect(
             x: margin,
@@ -237,6 +352,9 @@ class ViewController: NSViewController {
 
         // フレームを更新
         customImageView.frame = newFrame
+
+        // 拡大倍率を復元
+        customImageView.setScale(currentScale)
 
         // Update tips container position
         updateTipsContainerLayout()
@@ -264,6 +382,19 @@ class ViewController: NSViewController {
         // メモリリークを防ぐためにNotificationObserverを削除
         NotificationCenter.default.removeObserver(self)
     }
+
+    // MARK: - Transform Methods
+    func zoomIn() {
+        customImageView.zoomIn()
+    }
+
+    func zoomOut() {
+        customImageView.zoomOut()
+    }
+
+    func resetTransform() {
+        customImageView.resetTransform()
+    }
 }
 
 // MARK: - WindowCaptureManagerDelegate
@@ -280,7 +411,8 @@ extension ViewController: WindowCaptureManagerDelegate {
 
     func didEncounterError(_ error: Error) {
         DispatchQueue.main.async {
-            print("キャプチャエラー: \(error)")
+            // エラーログは重要なので、リリースビルドでも出力
+            os_log(.error, "キャプチャエラー: %@", error.localizedDescription)
         }
     }
 }

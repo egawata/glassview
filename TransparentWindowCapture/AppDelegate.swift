@@ -16,6 +16,7 @@ limitations under the License.
 
 import AppKit
 import ScreenCaptureKit
+import os.log
 
 // MARK: - App Delegate
 @available(macOS 12.3, *)
@@ -29,6 +30,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         setupWindow()
         setupControlPanelWindow()
         setupMainMenu()
+        setupGlobalEventMonitoring()
+    }
+
+    private func setupGlobalEventMonitoring() {
+        #if DEBUG
+        // グローバルイベント監視を設定してデバッグ
+        let logger = Logger(subsystem: "com.example.GlassView", category: "GlobalEvents")
+
+        logger.debug("🌍 Global event monitoring setup started")
+
+        // 簡単なログ出力でテスト
+        DispatchQueue.main.async {
+            logger.debug("🌍 Global event monitoring ready")
+        }
+        #endif
     }
 
     private func setupMainMenu() {
@@ -212,7 +228,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
     }
 
     private func setupControlPanelWindow() {
-        let contentRect = NSRect(x: 0, y: 0, width: 800, height: 180)
+        let contentRect = NSRect(x: 0, y: 0, width: 800, height: 200) // 高さを180から200に変更
 
         controlPanelWindow = NSWindow(
             contentRect: contentRect,
@@ -227,9 +243,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         let mainWindowFrame = window.frame
         let controlPanelFrame = NSRect(
             x: mainWindowFrame.maxX + 20,
-            y: mainWindowFrame.maxY - 180,
+            y: mainWindowFrame.maxY - 200, // 高さ変更に合わせて調整
             width: 800,
-            height: 180
+            height: 200 // 高さを180から200に変更
         )
         controlPanelWindow.setFrame(controlPanelFrame, display: true)
 
@@ -279,5 +295,18 @@ extension AppDelegate {
         window.level = enabled ? .floating : .normal
         viewController?.updateAlwaysOnTopState(enabled)
         updateAlwaysOnTopMenuState(enabled)
+    }
+
+    // MARK: - Transform Delegate Methods
+    func controlPanelDidZoomIn(_ panel: ControlPanelViewController) {
+        viewController?.zoomIn()
+    }
+
+    func controlPanelDidZoomOut(_ panel: ControlPanelViewController) {
+        viewController?.zoomOut()
+    }
+
+    func controlPanelDidResetTransform(_ panel: ControlPanelViewController) {
+        viewController?.resetTransform()
     }
 }
