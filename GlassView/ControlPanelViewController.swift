@@ -189,7 +189,7 @@ class ControlPanelViewController: NSViewController {
         view.addSubview(zoomOutButton)
 
         zoomInButton = NSButton(frame: NSRect(x: 65, y: 20, width: 60, height: 25))
-        zoomInButton.title = "🔍*"
+        zoomInButton.title = "🔍+"
         zoomInButton.bezelStyle = .rounded
         zoomInButton.target = self
         zoomInButton.action = #selector(zoomInClicked(_:))

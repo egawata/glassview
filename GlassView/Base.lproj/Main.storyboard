@@ -12,11 +12,11 @@
                 <application id="hnw-xV-0zn" sceneMemberID="viewController">
                     <menu key="mainMenu" title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
                         <items>
-                            <menuItem title="TransparentWindowCapture" id="1Xt-HY-uBw">
+                            <menuItem title="GlassView" id="1Xt-HY-uBw">
                                 <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="TransparentWindowCapture" systemMenu="apple" id="uQy-DD-JDr">
+                                <menu key="submenu" title="GlassView" systemMenu="apple" id="uQy-DD-JDr">
                                     <items>
-                                        <menuItem title="Quit TransparentWindowCapture" keyEquivalent="q" id="4sb-4s-VLi">
+                                        <menuItem title="Quit GlassView" keyEquivalent="q" id="4sb-4s-VLi">
                                             <connections>
                                                 <action selector="terminate:" target="hnw-xV-0zn" id="Te7-pn-YzF"/>
                                             </connections>

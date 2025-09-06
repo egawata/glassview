@@ -10,15 +10,15 @@ let package = Package(
     products: [
         .executable(
             name: "GlassView",
-            targets: ["TransparentWindowCapture"]
+            targets: ["GlassView"]
         ),
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "TransparentWindowCapture",
+            name: "GlassView",
             dependencies: [],
-            path: "TransparentWindowCapture"
+            path: "GlassView"
         ),
     ]
 )

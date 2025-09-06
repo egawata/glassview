@@ -48,7 +48,7 @@ brew install create-dmg
 
 1. アプリケーションをビルド済みであることを確認：
    ```bash
-   ls -la TransparentWindowCapture.app/Contents/MacOS/TransparentWindowCapture
+   ls -la GlassView.app/Contents/MacOS/GlassView
    ```
 
 2. 必要に応じて依存ツールをインストール：
