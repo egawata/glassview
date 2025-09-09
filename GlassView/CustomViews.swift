@@ -31,6 +31,18 @@ class ClickThroughImageView: NSImageView {
     private var maxScale: CGFloat = 5.0
     private var scaleStep: CGFloat = 0.1
 
+    // Pan (move) properties
+    private var currentTranslation = CGPoint(x: 0, y: 0)
+    private var isDragging = false
+    private var lastPanPoint = CGPoint.zero
+    private var isSpaceKeyPressed = false
+
+    // Global event monitors for space key tracking
+    private var keyDownMonitor: Any?
+    private var keyUpMonitor: Any?
+    private var localKeyDownMonitor: Any?
+    private var localKeyUpMonitor: Any?
+
     override func awakeFromNib() {
         super.awakeFromNib()
         setupTransformProperties()
@@ -51,12 +63,16 @@ class ClickThroughImageView: NSImageView {
         wantsLayer = true
         layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
+        // Setup global key event monitors for space key
+        setupSpaceKeyMonitors()
+
         #if DEBUG
         // デバッグログ: セットアップ情報を記録
         logger.debug("🎯 ClickThroughImageView setup completed")
         logger.debug("  - frame: \(String(describing: self.frame))")
         logger.debug("  - bounds: \(String(describing: self.bounds))")
         logger.debug("  - wantsLayer: \(self.wantsLayer)")
+        logger.debug("  - acceptsFirstResponder: \(self.acceptsFirstResponder)")
         #endif
     }
 
@@ -98,9 +114,32 @@ class ClickThroughImageView: NSImageView {
         // デバッグログ: mouseDownメソッドが呼ばれたことを記録
         logger.debug("🖱️ mouseDown called on ClickThroughImageView")
         logger.debug("  - clickThrough enabled: \(self.isClickThroughEnabled)")
+        logger.debug("  - modifierFlags: \(String(describing: event.modifierFlags))")
+        logger.debug("  - isSpaceKeyPressed: \(self.isSpaceKeyPressed)")
+        logger.debug("  - current translation: \(String(describing: self.currentTranslation))")
+        logger.debug("  - isFirstResponder: \(self.window?.firstResponder == self)")
+        logger.debug("  - window.firstResponder: \(String(describing: self.window?.firstResponder))")
         #endif
 
         if !isClickThroughEnabled {
+            // マウスクリック時にFirst Responderになるよう明示的に要求
+            if self.window?.firstResponder != self {
+                let didBecomeFirstResponder = self.window?.makeFirstResponder(self) ?? false
+                #if DEBUG
+                logger.debug("🎯 Attempting to become first responder: \(didBecomeFirstResponder)")
+                #endif
+            }
+
+            // Spaceキーが押されている場合は移動モード
+            if isSpaceKeyPressed {
+                isDragging = true
+                lastPanPoint = event.locationInWindow
+                #if DEBUG
+                logger.debug("🖐️ Pan mode started at: \(String(describing: self.lastPanPoint))")
+                logger.debug("🖐️ isDragging set to: \(self.isDragging)")
+                #endif
+                return
+            }
             super.mouseDown(with: event)
         }
         // クリック透過が有効な場合は何もしない
@@ -108,6 +147,13 @@ class ClickThroughImageView: NSImageView {
 
     override func mouseUp(with event: NSEvent) {
         if !isClickThroughEnabled {
+            if isDragging {
+                isDragging = false
+                #if DEBUG
+                logger.debug("🖐️ Pan mode ended")
+                #endif
+                return
+            }
             super.mouseUp(with: event)
         }
         // クリック透過が有効な場合は何もしない
@@ -115,9 +161,79 @@ class ClickThroughImageView: NSImageView {
 
     override func mouseDragged(with event: NSEvent) {
         if !isClickThroughEnabled {
+            #if DEBUG
+            logger.debug("🖱️ mouseDragged called")
+            logger.debug("  - isDragging: \(self.isDragging)")
+            logger.debug("  - isSpaceKeyPressed: \(self.isSpaceKeyPressed)")
+            #endif
+
+            if isDragging {
+                let currentPoint = event.locationInWindow
+                let deltaX = currentPoint.x - lastPanPoint.x
+                let deltaY = currentPoint.y - lastPanPoint.y
+
+                #if DEBUG
+                logger.debug("🖐️ Panning: raw delta(\(deltaX), \(deltaY))")
+                logger.debug("🖐️ Current scale: \(self.currentScale)")
+                logger.debug("🖐️ Current translation BEFORE: \(String(describing: self.currentTranslation))")
+                #endif
+
+                // 移動量を現在のスケール（拡大率）で割って調整
+                // 拡大率が高いほど移動量を小さくして、直感的な操作感を実現
+                let scaledDeltaX = deltaX / currentScale
+                let scaledDeltaY = deltaY / currentScale
+
+                // 移動量を現在の移動位置に追加
+                currentTranslation.x += scaledDeltaX
+                currentTranslation.y += scaledDeltaY
+
+                #if DEBUG
+                logger.debug("🖐️ Scaled delta(\(scaledDeltaX), \(scaledDeltaY))")
+                logger.debug("🖐️ Current translation AFTER: \(String(describing: self.currentTranslation))")
+                #endif
+
+                lastPanPoint = currentPoint
+                applyTransform()
+                return
+            }
             super.mouseDragged(with: event)
         }
         // クリック透過が有効な場合は何もしない
+    }
+
+    override func keyDown(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("⌨️ keyDown: keyCode=\(event.keyCode), characters=\(String(describing: event.characters))")
+        #endif
+
+        // Spaceキー (keyCode: 49) の検出
+        if event.keyCode == 49 {
+            isSpaceKeyPressed = true
+            #if DEBUG
+            logger.debug("🔘 Space key pressed - pan mode enabled")
+            #endif
+            return
+        }
+
+        super.keyDown(with: event)
+    }
+
+    override func keyUp(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("⌨️ keyUp: keyCode=\(event.keyCode), characters=\(String(describing: event.characters))")
+        #endif
+
+        // Spaceキー (keyCode: 49) のリリース
+        if event.keyCode == 49 {
+            isSpaceKeyPressed = false
+            isDragging = false
+            #if DEBUG
+            logger.debug("🔘 Space key released - pan mode disabled")
+            #endif
+            return
+        }
+
+        super.keyUp(with: event)
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -221,6 +337,10 @@ class ClickThroughImageView: NSImageView {
 
     func resetTransform() {
         currentScale = 1.0
+        currentTranslation = CGPoint(x: 0, y: 0)
+        #if DEBUG
+        logger.debug("🔄 Reset transform: scale=1.0, translation=(0,0)")
+        #endif
         applyTransform()
     }
 
@@ -228,17 +348,143 @@ class ClickThroughImageView: NSImageView {
         return currentScale
     }
 
+    // MARK: - Pan (Move) Methods
+    func panBy(deltaX: CGFloat, deltaY: CGFloat) {
+        currentTranslation.x += deltaX
+        currentTranslation.y += deltaY
+        #if DEBUG
+        logger.debug("📍 panBy: \(deltaX), \(deltaY) -> total: \(String(describing: self.currentTranslation))")
+        #endif
+        applyTransform()
+    }
+
+    func setPanPosition(x: CGFloat, y: CGFloat) {
+        currentTranslation.x = x
+        currentTranslation.y = y
+        #if DEBUG
+        logger.debug("📍 setPanPosition: \(String(describing: self.currentTranslation))")
+        #endif
+        applyTransform()
+    }
+
+    func getCurrentTranslation() -> CGPoint {
+        return currentTranslation
+    }
+
     private func applyTransform() {
-        guard let layer = layer else { return }
+        guard let layer = layer else {
+            #if DEBUG
+            logger.debug("❌ applyTransform: no layer found!")
+            #endif
+            return
+        }
+
+        #if DEBUG
+        logger.debug("🔄 applyTransform called:")
+        logger.debug("  - currentScale: \(self.currentScale)")
+        logger.debug("  - currentTranslation: \(String(describing: self.currentTranslation))")
+        logger.debug("  - layer: \(String(describing: layer))")
+        #endif
 
         CATransaction.begin()
         CATransaction.setAnimationDuration(0.2)
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
 
-        let transform = CATransform3DMakeScale(currentScale, currentScale, 1.0)
+        // スケールと移動を組み合わせたトランスフォーム
+        var transform = CATransform3DMakeScale(currentScale, currentScale, 1.0)
+        transform = CATransform3DTranslate(transform, currentTranslation.x, currentTranslation.y, 0)
+
+        #if DEBUG
+        logger.debug("  - applying transform with translation: (\(self.currentTranslation.x), \(self.currentTranslation.y))")
+        #endif
+
         layer.transform = transform
 
         CATransaction.commit()
+
+        #if DEBUG
+        logger.debug("✅ applyTransform completed")
+        #endif
+    }
+
+    // MARK: - Space Key Monitoring
+    private func setupSpaceKeyMonitors() {
+        #if DEBUG
+        logger.debug("🔧 Setting up global and local space key monitors")
+        #endif
+
+        // Monitor key down events globally
+        keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 49 { // Space key
+                self?.isSpaceKeyPressed = true
+                #if DEBUG
+                self?.logger.debug("🔘 Global Space key pressed")
+                #endif
+            }
+        }
+
+        // Monitor key up events globally
+        keyUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { [weak self] event in
+            if event.keyCode == 49 { // Space key
+                self?.isSpaceKeyPressed = false
+                self?.isDragging = false
+                #if DEBUG
+                self?.logger.debug("🔘 Global Space key released")
+                #endif
+            }
+        }
+
+        // Also monitor local events (when our app has focus)
+        localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 49 { // Space key
+                self?.isSpaceKeyPressed = true
+                #if DEBUG
+                self?.logger.debug("🔘 Local Space key pressed")
+                #endif
+                // Return nil to consume the event and prevent it from propagating
+                return nil
+            }
+            return event
+        }
+
+        localKeyUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { [weak self] event in
+            if event.keyCode == 49 { // Space key
+                self?.isSpaceKeyPressed = false
+                self?.isDragging = false
+                #if DEBUG
+                self?.logger.debug("🔘 Local Space key released")
+                #endif
+                // Return nil to consume the event
+                return nil
+            }
+            return event
+        }
+    }
+
+    private func removeSpaceKeyMonitors() {
+        if let monitor = keyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyDownMonitor = nil
+        }
+        if let monitor = keyUpMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyUpMonitor = nil
+        }
+        if let monitor = localKeyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            localKeyDownMonitor = nil
+        }
+        if let monitor = localKeyUpMonitor {
+            NSEvent.removeMonitor(monitor)
+            localKeyUpMonitor = nil
+        }
+        #if DEBUG
+        logger.debug("🗑️ Removed all space key monitors")
+        #endif
+    }
+
+    deinit {
+        removeSpaceKeyMonitors()
     }
 }
 
