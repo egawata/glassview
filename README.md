@@ -98,6 +98,7 @@ swift build
 pkill -f "GlassView" 2>/dev/null || true
 
 # 3. update executable
+mkdir -p GlassView.app/Contents/MacOS
 cp .build/debug/GlassView GlassView.app/Contents/MacOS/
 
 # for release build
