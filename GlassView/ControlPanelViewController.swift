@@ -47,7 +47,6 @@ class ControlPanelViewController: NSViewController {
     private var startCaptureButton: NSButton!
     private var refreshButton: NSButton!
     private var transparencySlider: NSSlider!
-    private var frameRateSlider: NSSlider!
     private var frameRateTextField: NSTextField!
     private var clickThroughButton: NSButton!
     private var alwaysOnTopButton: NSButton!
@@ -134,15 +133,7 @@ class ControlPanelViewController: NSViewController {
         frameRateLabel.backgroundColor = NSColor.clear
         view.addSubview(frameRateLabel)
 
-        frameRateSlider = NSSlider(frame: NSRect(x: 445, y: 87, width: 180, height: 25))
-        frameRateSlider.minValue = 1.0
-        frameRateSlider.maxValue = 60.0
-        frameRateSlider.doubleValue = currentFrameRate
-        frameRateSlider.target = self
-        frameRateSlider.action = #selector(frameRateSliderChanged(_:))
-        view.addSubview(frameRateSlider)
-
-        frameRateTextField = NSTextField(frame: NSRect(x: 635, y: 87, width: 50, height: 25))
+        frameRateTextField = NSTextField(frame: NSRect(x: 445, y: 87, width: 80, height: 25))
         frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
         frameRateTextField.isEditable = true
         frameRateTextField.target = self
@@ -235,17 +226,10 @@ class ControlPanelViewController: NSViewController {
         delegate?.controlPanel(self, didChangeTransparency: sender.doubleValue)
     }
 
-    @objc private func frameRateSliderChanged(_ sender: NSSlider) {
-        currentFrameRate = sender.doubleValue
-        frameRateTextField.stringValue = String(format: "%.0f", currentFrameRate)
-        delegate?.controlPanel(self, didChangeFrameRate: currentFrameRate)
-    }
-
     @objc private func frameRateTextFieldChanged(_ sender: NSTextField) {
         if let value = Double(sender.stringValue) {
             let clampedValue = max(1.0, min(60.0, value))
             currentFrameRate = clampedValue
-            frameRateSlider.doubleValue = clampedValue
             frameRateTextField.stringValue = String(format: "%.0f", clampedValue)
             delegate?.controlPanel(self, didChangeFrameRate: currentFrameRate)
         } else {

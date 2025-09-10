@@ -96,7 +96,7 @@ swift build
 # xcodebuild -project GlassView.xcodeproj -scheme GlassView -configuration Release clean build
 
 # 2. Stop running process
-pkill -f "GlassView" 2>/dev/null || true
+pkill -f "GlassView"
 
 # 3. update executable
 mkdir -p GlassView.app/Contents/MacOS
