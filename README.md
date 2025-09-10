@@ -12,7 +12,7 @@ macOS上で他のアプリケーションのウィンドウをリアルタイム
 
 ### dmg からインストール
 
-[https://github.com/egawata/glassview/releases/tag/v0.2](https://github.com/egawata/glassview/releases/tag/v0.2) から `.dmg` ファイルをダウンロードし、インストールを行ってください。
+[https://github.com/egawata/glassview/releases/tag/v0.2.1](https://github.com/egawata/glassview/releases/tag/v0.2.1) から `.dmg` ファイルをダウンロードし、インストールを行ってください。
 
 ### ソースコードからビルド
 
