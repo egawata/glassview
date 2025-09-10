@@ -1,7 +1,7 @@
 # Swift Package Manager
 /.build/
 /Packages
-/*.xcodeproj
+# /*.xcodeproj  # XCode Cloud用にコメントアウト
 !Package.swift
 
 # Xcode
