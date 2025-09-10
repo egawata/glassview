@@ -193,7 +193,7 @@ class ViewController: NSViewController {
 
         // Tips label
         tipsLabel = NSTextField(frame: NSRect(x: 50, y: 220, width: 600, height: 90))
-        tipsLabel.stringValue = "Tips:\n画面操作に困ったらデスクトップ上部メニューバーの\n「全てリセット」を選択してください"
+        tipsLabel.stringValue = "[TIPS]\n拡大縮小: `Shift` キーを押しながらマウスホイールを操作\n移動: `Space` キーを押しながらマウス左ドラッグ"
         tipsLabel.isEditable = false
         tipsLabel.isBordered = false
         tipsLabel.backgroundColor = NSColor.clear
@@ -218,7 +218,7 @@ class ViewController: NSViewController {
 
         // Add subviews to container
         tipsContainerView.addSubview(tipsLabel)
-        tipsContainerView.addSubview(tipsImageView)
+        // tipsContainerView.addSubview(tipsImageView)  // 画像は非表示
 
         // Add container to custom image view
         customImageView.addSubview(tipsContainerView)
