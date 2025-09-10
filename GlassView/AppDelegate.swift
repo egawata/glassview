@@ -33,6 +33,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         setupGlobalEventMonitoring()
     }
 
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+        return true
+    }
+
     private func setupGlobalEventMonitoring() {
         #if DEBUG
         // グローバルイベント監視を設定してデバッグ
