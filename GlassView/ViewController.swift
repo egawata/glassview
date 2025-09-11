@@ -169,13 +169,20 @@ class ViewController: NSViewController {
     }
 
     private func setupUI() {
-        // Custom ImageView (click-through capable) - アスペクト比保持でリサイズ
-        customImageView = ClickThroughImageView(frame: NSRect(x: 20, y: 20, width: 760, height: 560))
-        customImageView.imageScaling = .scaleProportionallyUpOrDown // アスペクト比を保持してサイズ調整
+        // クリッピング用のコンテナビューを作成
+        let containerView = NSView(frame: NSRect(x: 20, y: 20, width: 760, height: 560))
+        containerView.wantsLayer = true
+        containerView.layer?.masksToBounds = true // クリッピングを有効化
+        containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        view.addSubview(containerView)
+
+        // Custom ImageView (click-through capable) - コンテナ内に配置
+        customImageView = ClickThroughImageView(frame: NSRect(x: 0, y: 0, width: 760, height: 560))
+        customImageView.imageScaling = .scaleNone // 自動スケーリングを無効化
         customImageView.imageAlignment = .alignCenter
         customImageView.wantsLayer = true
-        customImageView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-        view.addSubview(customImageView)
+        customImageView.layer?.backgroundColor = NSColor.clear.cgColor
+        containerView.addSubview(customImageView) // コンテナビューに追加
 
         // Setup Tips container
         setupTipsDisplay()
@@ -345,25 +352,51 @@ class ViewController: NSViewController {
     private func updateCaptureAreaLayout() {
         guard let window = view.window else { return }
 
+        // 画像が設定されていない場合は処理をスキップ
+        guard customImageView.image != nil else {
+            #if DEBUG
+            print("⚠️ updateCaptureAreaLayout: No image set, skipping layout update")
+            #endif
+            return
+        }
+
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
 
-        // 現在の拡大倍率を保存
+        // 現在の拡大倍率と平行移動を取得
         let currentScale = customImageView.getCurrentScale()
+        let currentTranslation = customImageView.getCurrentTranslation()
 
-        // キャプチャエリアの新しいフレームを計算
-        let newFrame = NSRect(
+        // ImageViewの基本サイズ（拡大なし）を取得
+        let imageSize = customImageView.image?.size ?? NSSize(width: 800, height: 600)
+
+        // クリッピング用のコンテナビューを設定（ウィンドウサイズに合わせる）
+        let visibleArea = NSRect(
             x: margin,
             y: margin,
             width: windowFrame.width - (margin * 2),
             height: windowFrame.height - (margin * 2)
         )
 
-        // フレームを更新
-        customImageView.frame = newFrame
+        // ImageViewのスーパービューにクリッピングを設定
+        if let containerView = customImageView.superview {
+            containerView.frame = visibleArea
+            containerView.wantsLayer = true
+            containerView.layer?.masksToBounds = true
+        }
 
-        // 拡大倍率を復元
+        // ImageViewのフレームは元画像サイズを維持（拡大はトランスフォームで処理）
+        let imageViewFrame = NSRect(
+            x: 0,  // コンテナ座標系で左上から開始
+            y: 0,
+            width: imageSize.width,
+            height: imageSize.height
+        )
+        customImageView.frame = imageViewFrame
+
+        // 拡大倍率と平行移動を再適用
         customImageView.setScale(currentScale)
+        customImageView.setPanPosition(x: currentTranslation.x, y: currentTranslation.y)
 
         // Update tips container position
         updateTipsContainerLayout()
@@ -411,11 +444,64 @@ class ViewController: NSViewController {
 extension ViewController: WindowCaptureManagerDelegate {
     func didReceiveNewFrame(_ image: NSImage) {
         DispatchQueue.main.async {
+            let wasFirstImage = self.customImageView.image == nil
+
             // 画像をキャプチャエリアに設定
-            // NSImageViewのimageScalingが.scaleProportionallyUpOrDownに設定されているため、
-            // アスペクト比を保持しながら自動的にフィットされる
             self.customImageView.image = image
+
+            // 初回の画像設定時は、適切なレイアウト調整を実行
+            if wasFirstImage {
+                self.setupInitialImageLayout(for: image)
+            }
         }
+    }
+
+    // 初回画像設定時の適切なレイアウト設定
+    private func setupInitialImageLayout(for image: NSImage) {
+        guard let window = view.window else { return }
+
+        let windowFrame = window.contentView?.frame ?? NSRect.zero
+        let margin: CGFloat = 20
+
+        // 表示可能エリアのサイズ
+        let availableWidth = windowFrame.width - (margin * 2)
+        let availableHeight = windowFrame.height - (margin * 2)
+
+        // 画像の実際のサイズ
+        let imageSize = image.size
+
+        // 表示エリアに画像を適合させるための拡大率を計算
+        let scaleToFitWidth = availableWidth / imageSize.width
+        let scaleToFitHeight = availableHeight / imageSize.height
+        let initialScale = min(scaleToFitWidth, scaleToFitHeight) // アスペクト比を保持
+
+        // コンテナビューのフレーム設定
+        if let containerView = customImageView.superview {
+            containerView.frame = NSRect(x: margin, y: margin, width: availableWidth, height: availableHeight)
+            containerView.wantsLayer = true
+            containerView.layer?.masksToBounds = true
+        }
+
+        // ImageViewのフレームは画像の実際のサイズに設定
+        customImageView.frame = NSRect(x: 0, y: 0, width: imageSize.width, height: imageSize.height)
+
+        // 画像を表示エリアに適合させる拡大率を設定
+        customImageView.setScale(initialScale)
+
+        // 画像を中央に配置
+        let scaledImageWidth = imageSize.width * initialScale
+        let scaledImageHeight = imageSize.height * initialScale
+        let centerX = (availableWidth - scaledImageWidth) / 2
+        let centerY = (availableHeight - scaledImageHeight) / 2
+        customImageView.setPanPosition(x: centerX, y: centerY)
+
+        #if DEBUG
+        print("🎯 Initial image layout:")
+        print("  - Image size: \(imageSize)")
+        print("  - Available area: \(availableWidth) x \(availableHeight)")
+        print("  - Initial scale: \(initialScale)")
+        print("  - Center position: (\(centerX), \(centerY))")
+        #endif
     }
 
     func didEncounterError(_ error: Error) {

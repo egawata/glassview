@@ -344,6 +344,20 @@ class ClickThroughImageView: NSImageView {
         applyTransform()
     }
 
+    func resetTransformOnly() {
+        // 値は保持したまま、Core Animationのトランスフォームだけをリセット
+        guard let layer = layer else { return }
+
+        #if DEBUG
+        logger.debug("🔄 Reset transform only (keeping scale: \(self.currentScale), translation: \(String(describing: self.currentTranslation)))")
+        #endif
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true) // アニメーションを無効化
+        layer.transform = CATransform3DIdentity
+        CATransaction.commit()
+    }
+
     func getCurrentScale() -> CGFloat {
         return currentScale
     }
