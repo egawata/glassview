@@ -552,3 +552,100 @@ class ClickThroughWindow: NSWindow {
         }
     }
 }
+
+// MARK: - Event Forwarding View
+@available(macOS 12.3, *)
+class EventForwardingView: NSView {
+    weak var targetImageView: ClickThroughImageView?
+
+    private let logger = Logger(subsystem: "com.example.GlassView", category: "EventForwarding")
+
+    override var acceptsFirstResponder: Bool {
+        return true
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        // このビューは常に透明で、イベントのみを処理
+        return self
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.scrollWheel - forwarding to targetImageView")
+        logger.debug("  - point in window: \(String(describing: event.locationInWindow))")
+        logger.debug("  - deltaY: \(event.scrollingDeltaY)")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.scrollWheel(with: event)
+        } else {
+            super.scrollWheel(with: event)
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.mouseDown - forwarding to targetImageView")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.mouseDown(with: event)
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.mouseUp - forwarding to targetImageView")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.mouseUp(with: event)
+        } else {
+            super.mouseUp(with: event)
+        }
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.mouseDragged - forwarding to targetImageView")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.mouseDragged(with: event)
+        } else {
+            super.mouseDragged(with: event)
+        }
+    }
+
+    override func keyDown(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.keyDown - forwarding to targetImageView")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.keyDown(with: event)
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
+    override func keyUp(with event: NSEvent) {
+        #if DEBUG
+        logger.debug("🔄 EventForwardingView.keyUp - forwarding to targetImageView")
+        #endif
+
+        // ターゲットのImageViewに転送
+        if let imageView = targetImageView {
+            imageView.keyUp(with: event)
+        } else {
+            super.keyUp(with: event)
+        }
+    }
+}

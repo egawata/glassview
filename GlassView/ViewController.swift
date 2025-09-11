@@ -190,6 +190,12 @@ class ViewController: NSViewController {
         customImageView.layer?.backgroundColor = NSColor.clear.cgColor
         containerView.addSubview(customImageView) // コンテナビューに追加
 
+        // イベント受信用の透明レイヤーを追加（ウィンドウ全体をカバー）
+        let eventForwardingView = EventForwardingView(frame: view.bounds)
+        eventForwardingView.targetImageView = customImageView
+        eventForwardingView.autoresizingMask = [NSView.AutoresizingMask.width, NSView.AutoresizingMask.height]
+        view.addSubview(eventForwardingView)
+
         // Setup Tips container
         setupTipsDisplay()
     }
