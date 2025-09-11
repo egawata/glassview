@@ -164,6 +164,12 @@ class ViewController: NSViewController {
 
     override func viewDidLayout() {
         super.viewDidLayout()
+
+        // 初回のウィンドウフレームを記録
+        if lastWindowFrame == .zero, let window = view.window {
+            lastWindowFrame = window.frame
+        }
+
         // ビューのレイアウトが変更された時にキャプチャエリアのサイズも調整
         updateCaptureAreaLayout()
     }
@@ -349,19 +355,26 @@ class ViewController: NSViewController {
         updateCaptureAreaLayout()
     }
 
+    // ウィンドウフレームの変更を追跡するためのプロパティ
+    private var lastWindowFrame: NSRect = .zero
+
     private func updateCaptureAreaLayout() {
         guard let window = view.window else { return }
 
         // 画像が設定されていない場合は処理をスキップ
         guard customImageView.image != nil else {
-            #if DEBUG
-            print("⚠️ updateCaptureAreaLayout: No image set, skipping layout update")
-            #endif
             return
         }
 
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
+
+        // ウィンドウの位置変化を計算（左端・下端リサイズの検出）
+        let windowDeltaX = window.frame.origin.x - lastWindowFrame.origin.x
+        let windowDeltaY = window.frame.origin.y - lastWindowFrame.origin.y
+
+        // 現在のウィンドウフレームを記録
+        lastWindowFrame = window.frame
 
         // 現在の拡大倍率と平行移動を取得
         let currentScale = customImageView.getCurrentScale()
@@ -385,18 +398,22 @@ class ViewController: NSViewController {
             containerView.layer?.masksToBounds = true
         }
 
-        // ImageViewのフレームは元画像サイズを維持（拡大はトランスフォームで処理）
+        // ImageViewをsetupInitialImageLayoutと同じ方式で配置（フレームは(0,0)、中央配置はpanPositionで）
         let imageViewFrame = NSRect(
-            x: 0,  // コンテナ座標系で左上から開始
+            x: 0,
             y: 0,
             width: imageSize.width,
             height: imageSize.height
         )
         customImageView.frame = imageViewFrame
 
-        // 拡大倍率と平行移動を再適用
+        // 拡大倍率と位置補正済みの平行移動を適用
         customImageView.setScale(currentScale)
-        customImageView.setPanPosition(x: currentTranslation.x, y: currentTranslation.y)
+        // ウィンドウ位置の変化分を補正（左端・下端リサイズ時に画像位置を維持）
+        // 拡大率を考慮して補正量を調整
+        let adjustedTranslationX = currentTranslation.x - (windowDeltaX / currentScale)
+        let adjustedTranslationY = currentTranslation.y - (windowDeltaY / currentScale)
+        customImageView.setPanPosition(x: adjustedTranslationX, y: adjustedTranslationY)
 
         // Update tips container position
         updateTipsContainerLayout()
