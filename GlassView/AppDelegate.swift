@@ -20,7 +20,7 @@ import os.log
 
 // MARK: - App Delegate
 @available(macOS 12.3, *)
-class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate, NSWindowDelegate {
     var window: NSWindow!
     var controlPanelWindow: NSWindow!
     private var viewController: ViewController?
@@ -218,6 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
 
         window.title = "GlassView"
         window.center()
+        window.delegate = self  // ウィンドウのdelegateを設定
 
         // 最小ウィンドウサイズを設定（UI要素が正常に表示できる最小サイズ）
         window.minSize = NSSize(width: 400, height: 300)
@@ -242,6 +243,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
         )
 
         controlPanelWindow.title = "GlassView Control Panel"
+        controlPanelWindow.delegate = self  // ウィンドウのdelegateを設定
 
         // メインウィンドウの右側に配置
         let mainWindowFrame = window.frame
@@ -263,6 +265,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, ControlPanelDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
+    }
+
+    // MARK: - NSWindowDelegate
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // 終了確認ダイアログを表示
+        let alert = NSAlert()
+        alert.messageText = "終了しますか？"
+        alert.informativeText = "GlassViewアプリケーションを終了します。"
+        alert.addButton(withTitle: "終了")
+        alert.addButton(withTitle: "キャンセル")
+        alert.alertStyle = .warning
+
+        // メインウィンドウを親として設定
+        let response = alert.runModal()
+
+        if response == .alertFirstButtonReturn {
+            // 「終了」が選択された場合、アプリケーション全体を終了
+            NSApplication.shared.terminate(nil)
+            return true
+        } else {
+            // 「キャンセル」が選択された場合、ウィンドウを閉じない
+            return false
+        }
     }
 }
 
