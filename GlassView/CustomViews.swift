@@ -310,7 +310,7 @@ class ClickThroughImageView: NSImageView {
     // MARK: - Transform Methods
     func zoomIn(step: CGFloat? = nil) {
         let stepToUse = step ?? scaleStep
-        let newScale = min(currentScale + stepToUse, maxScale)
+        let newScale = min(currentScale * (1.0 + stepToUse), maxScale)
         #if DEBUG
         logger.debug("🔍 zoomIn: \(self.currentScale) → \(newScale) (step: \(stepToUse))")
         #endif
@@ -319,7 +319,7 @@ class ClickThroughImageView: NSImageView {
 
     func zoomOut(step: CGFloat? = nil) {
         let stepToUse = step ?? scaleStep
-        let newScale = max(currentScale - stepToUse, minScale)
+        let newScale = max(currentScale * (1.0 - stepToUse), minScale)
         #if DEBUG
         logger.debug("🔍 zoomOut: \(self.currentScale) → \(newScale) (step: \(stepToUse))")
         #endif
