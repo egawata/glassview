@@ -35,6 +35,8 @@ class ViewController: NSViewController {
     private var isAlwaysOnTopEnabled = false
     private var currentFrameRate: Double = 3.0  // initial fps
 
+    private let logger = Logger(subsystem: "com.example.GlassView", category: "ViewController")
+
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         setupUI()
@@ -315,6 +317,13 @@ class ViewController: NSViewController {
     private func setupWindowCaptureManager() {
         windowCaptureManager = WindowCaptureManager()
         windowCaptureManager?.delegate = self
+
+        // ビューが読み込まれた後にターゲットウィンドウを設定
+        DispatchQueue.main.async { [weak self] in
+            if let window = self?.view.window {
+                self?.windowCaptureManager?.setTargetWindow(window)
+            }
+        }
     }
 
     // MARK: - Window Resize and Layout Methods
@@ -410,9 +419,21 @@ extension ViewController: WindowCaptureManagerDelegate {
     }
 
     func didEncounterError(_ error: Error) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
             // エラーログは重要なので、リリースビルドでも出力
-            os_log(.error, "キャプチャエラー: %@", error.localizedDescription)
+            self?.logger.error("キャプチャエラー: \(error.localizedDescription)")
+        }
+    }
+
+    func captureStateDidChange(_ isActive: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            #if DEBUG
+            if isActive {
+                self?.logger.debug("📹 キャプチャが再開されました")
+            } else {
+                self?.logger.debug("⏸️ キャプチャが一時停止されました")
+            }
+            #endif
         }
     }
 }
