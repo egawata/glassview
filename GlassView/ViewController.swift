@@ -354,10 +354,23 @@ class ViewController: NSViewController {
             name: NSWindow.didResizeNotification,
             object: view.window
         )
+
+        // ウィンドウ移動の通知も監視
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidMove(_:)),
+            name: NSWindow.didMoveNotification,
+            object: view.window
+        )
     }
 
     @objc private func windowDidResize(_ notification: Notification) {
         // ウィンドウがリサイズされた時にキャプチャエリアのレイアウトを更新
+        updateCaptureAreaLayout()
+    }
+
+    @objc private func windowDidMove(_ notification: Notification) {
+        // ウィンドウが移動された時にもキャプチャエリアのレイアウトを更新
         updateCaptureAreaLayout()
     }
 
@@ -375,12 +388,15 @@ class ViewController: NSViewController {
         let windowFrame = window.contentView?.frame ?? NSRect.zero
         let margin: CGFloat = 20
 
-        // ウィンドウの位置変化を計算（左端・下端リサイズの検出）
-        let windowDeltaX = window.frame.origin.x - lastWindowFrame.origin.x
-        let windowDeltaY = window.frame.origin.y - lastWindowFrame.origin.y
+        // ウィンドウの位置変化とサイズ変化を計算
+        let currentFrame = window.frame
+        let windowDeltaX = currentFrame.origin.x - lastWindowFrame.origin.x
+        let windowDeltaY = currentFrame.origin.y - lastWindowFrame.origin.y
+        let sizeDeltaW = currentFrame.size.width - lastWindowFrame.size.width
+        let sizeDeltaH = currentFrame.size.height - lastWindowFrame.size.height
 
         // 現在のウィンドウフレームを記録
-        lastWindowFrame = window.frame
+        lastWindowFrame = currentFrame
 
         // 現在の拡大倍率と平行移動を取得
         let currentScale = customImageView.getCurrentScale()
@@ -415,10 +431,24 @@ class ViewController: NSViewController {
 
         // 拡大倍率と位置補正済みの平行移動を適用
         customImageView.setScale(currentScale)
-        // ウィンドウ位置の変化分を補正（左端・下端リサイズ時に画像位置を維持）
-        // 拡大率を考慮して補正量を調整
-        let adjustedTranslationX = currentTranslation.x - (windowDeltaX / currentScale)
-        let adjustedTranslationY = currentTranslation.y - (windowDeltaY / currentScale)
+
+        // 位置補正の計算：リサイズと移動で異なる処理
+        var adjustedTranslationX = currentTranslation.x
+        var adjustedTranslationY = currentTranslation.y
+
+        // サイズが変わっていない場合は純粋な移動として処理（画像を同じ方向に移動）
+        if sizeDeltaW == 0 && sizeDeltaH == 0 {
+            // 純粋な移動：画像を同じ方向に移動させて追従
+            // ウィンドウと一緒に画像も移動する（足し算で追従）
+            //adjustedTranslationX += (windowDeltaX / currentScale)
+            //adjustedTranslationY += (windowDeltaY / currentScale)
+        } else {
+            // リサイズあり：画像の絶対位置を維持（引き算で補正）
+            // ウィンドウの位置変化をキャンセルして画像の絶対位置を維持
+            adjustedTranslationX -= (windowDeltaX / currentScale)
+            adjustedTranslationY -= (windowDeltaY / currentScale)
+        }
+
         customImageView.setPanPosition(x: adjustedTranslationX, y: adjustedTranslationY)
 
         // Update tips container position
