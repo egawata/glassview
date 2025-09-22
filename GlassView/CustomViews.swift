@@ -37,6 +37,15 @@ class ClickThroughImageView: NSImageView {
     private var lastPanPoint = CGPoint.zero
     private var isSpaceKeyPressed = false
 
+    // Cursor state properties (read-only access for EventForwardingView)
+    var shouldShowPanCursor: Bool {
+        return window?.isMainWindow == true && isSpaceKeyPressed && !isClickThroughEnabled
+    }
+
+    var isPanDragging: Bool {
+        return isDragging
+    }
+
     // Global event monitors for space key tracking
     private var keyDownMonitor: Any?
     private var keyUpMonitor: Any?
@@ -65,6 +74,21 @@ class ClickThroughImageView: NSImageView {
 
         // Setup global key event monitors for space key
         setupSpaceKeyMonitors()
+
+        // ウィンドウのアクティブ状態変更を監視
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidBecomeMain),
+            name: NSWindow.didBecomeMainNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidResignMain),
+            name: NSWindow.didResignMainNotification,
+            object: nil
+        )
 
         #if DEBUG
         // デバッグログ: セットアップ情報を記録
@@ -109,6 +133,60 @@ class ClickThroughImageView: NSImageView {
         return !isClickThroughEnabled
     }
 
+    // MARK: - Cursor Management
+    override func resetCursorRects() {
+        super.resetCursorRects()
+
+        // メインウィンドウがアクティブで、かつSpaceキーが押されている時のみカーソルを変更
+        if window?.isMainWindow == true && isSpaceKeyPressed && !isClickThroughEnabled {
+            if isDragging {
+                addCursorRect(bounds, cursor: .closedHand)
+            } else {
+                addCursorRect(bounds, cursor: .openHand)
+            }
+        } else {
+            addCursorRect(bounds, cursor: .arrow)
+        }
+    }
+
+    private func updateCursor() {
+        // カーソル矩形を再計算してカーソルを更新
+        window?.invalidateCursorRects(for: self)
+        discardCursorRects()
+        resetCursorRects()
+
+        // EventForwardingViewにも通知
+        updateEventForwardingViewCursor()
+    }
+
+    private func updateEventForwardingViewCursor() {
+        // 親ビューでEventForwardingViewを探して、カーソルを更新
+        guard let parentView = superview?.superview else { return }
+
+        for subview in parentView.subviews {
+            if let eventForwardingView = subview as? EventForwardingView {
+                eventForwardingView.window?.invalidateCursorRects(for: eventForwardingView)
+                eventForwardingView.discardCursorRects()
+                eventForwardingView.resetCursorRects()
+            }
+        }
+    }
+
+    // MARK: - Window State Notification Handlers
+    @objc private func windowDidBecomeMain(_ notification: Notification) {
+        #if DEBUG
+        logger.debug("🏠 Window became main - updating cursor")
+        #endif
+        updateCursor()
+    }
+
+    @objc private func windowDidResignMain(_ notification: Notification) {
+        #if DEBUG
+        logger.debug("🏠 Window resigned main - updating cursor")
+        #endif
+        updateCursor()
+    }
+
     override func mouseDown(with event: NSEvent) {
         #if DEBUG
         // デバッグログ: mouseDownメソッドが呼ばれたことを記録
@@ -134,6 +212,7 @@ class ClickThroughImageView: NSImageView {
             if isSpaceKeyPressed {
                 isDragging = true
                 lastPanPoint = event.locationInWindow
+                updateCursor() // カーソルを閉じた手のマークに変更
                 #if DEBUG
                 logger.debug("🖐️ Pan mode started at: \(String(describing: self.lastPanPoint))")
                 logger.debug("🖐️ isDragging set to: \(self.isDragging)")
@@ -149,6 +228,7 @@ class ClickThroughImageView: NSImageView {
         if !isClickThroughEnabled {
             if isDragging {
                 isDragging = false
+                updateCursor() // カーソルを開いた手のマークに戻す
                 #if DEBUG
                 logger.debug("🖐️ Pan mode ended")
                 #endif
@@ -209,6 +289,7 @@ class ClickThroughImageView: NSImageView {
         // Spaceキー (keyCode: 49) の検出
         if event.keyCode == 49 {
             isSpaceKeyPressed = true
+            updateCursor() // カーソルを開いた手のマークに変更
             #if DEBUG
             logger.debug("🔘 Space key pressed - pan mode enabled")
             #endif
@@ -227,6 +308,7 @@ class ClickThroughImageView: NSImageView {
         if event.keyCode == 49 {
             isSpaceKeyPressed = false
             isDragging = false
+            updateCursor() // カーソルを通常の矢印に戻す
             #if DEBUG
             logger.debug("🔘 Space key released - pan mode disabled")
             #endif
@@ -431,6 +513,7 @@ class ClickThroughImageView: NSImageView {
         keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 49 { // Space key
                 self?.isSpaceKeyPressed = true
+                self?.updateCursor() // カーソルを更新
                 #if DEBUG
                 self?.logger.debug("🔘 Global Space key pressed")
                 #endif
@@ -442,6 +525,7 @@ class ClickThroughImageView: NSImageView {
             if event.keyCode == 49 { // Space key
                 self?.isSpaceKeyPressed = false
                 self?.isDragging = false
+                self?.updateCursor() // カーソルを更新
                 #if DEBUG
                 self?.logger.debug("🔘 Global Space key released")
                 #endif
@@ -452,6 +536,7 @@ class ClickThroughImageView: NSImageView {
         localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 49 { // Space key
                 self?.isSpaceKeyPressed = true
+                self?.updateCursor() // カーソルを更新
                 #if DEBUG
                 self?.logger.debug("🔘 Local Space key pressed")
                 #endif
@@ -465,6 +550,7 @@ class ClickThroughImageView: NSImageView {
             if event.keyCode == 49 { // Space key
                 self?.isSpaceKeyPressed = false
                 self?.isDragging = false
+                self?.updateCursor() // カーソルを更新
                 #if DEBUG
                 self?.logger.debug("🔘 Local Space key released")
                 #endif
@@ -498,6 +584,10 @@ class ClickThroughImageView: NSImageView {
     }
 
     deinit {
+        // NotificationObserverを削除
+        NotificationCenter.default.removeObserver(self)
+
+        // キーモニターを削除
         removeSpaceKeyMonitors()
     }
 }
@@ -567,6 +657,32 @@ class EventForwardingView: NSView {
     override func hitTest(_ point: NSPoint) -> NSView? {
         // このビューは常に透明で、イベントのみを処理
         return self
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+
+        // ターゲットImageViewのカーソル状態を反映
+        if let imageView = targetImageView {
+            if imageView.shouldShowPanCursor {
+                if imageView.isPanDragging {
+                    addCursorRect(bounds, cursor: .closedHand)
+                } else {
+                    addCursorRect(bounds, cursor: .openHand)
+                }
+            } else {
+                addCursorRect(bounds, cursor: .arrow)
+            }
+        } else {
+            addCursorRect(bounds, cursor: .arrow)
+        }
+    }
+
+    private func updateCursor() {
+        // カーソル矩形を再計算してカーソルを更新
+        window?.invalidateCursorRects(for: self)
+        discardCursorRects()
+        resetCursorRects()
     }
 
     override func scrollWheel(with event: NSEvent) {
