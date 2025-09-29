@@ -2,6 +2,16 @@
 
 macOS上で他のアプリケーションのウィンドウをリアルタイムでキャプチャし、透過ウィンドウで表示するSwiftアプリケーションです。
 
+## Demo
+
+ドローイングツールの上に「写真」アプリを半透明で重ねてトレースした例
+
+<div align="center" style="margin: 30px 0px">
+<video width="480" controls>
+  <source src="https://storage.googleapis.com/illusts/videos/glassview_demo_f_480.mp4" type="video/mp4">
+</video>
+</div>
+
 ## 必要要件
 
 - macOS 12.3以上
