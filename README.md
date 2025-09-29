@@ -4,13 +4,11 @@ macOS上で他のアプリケーションのウィンドウをリアルタイム
 
 ## Demo
 
-ドローイングツールの上に「写真」アプリを半透明で重ねてトレースした例
+ドローイングツールの上に「写真」アプリを半透明で重ねてトレースする例
 
-<div align="center" style="margin: 30px 0px">
-<video width="480" controls>
-  <source src="https://storage.googleapis.com/illusts/videos/glassview_demo_f_480.mp4" type="video/mp4">
-</video>
-</div>
+![GlassView Demo](images/glassview_demo.jpg)
+
+<a href="https://storage.googleapis.com/illusts/videos/glassview_demo_f.mp4">デモ動画</a>
 
 ## 必要要件
 
